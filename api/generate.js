@@ -217,6 +217,53 @@ ${priorBlock}
 该阶段任务：${phase.brief}`;
 }
 
+// ---------------- 程序化查重：段内查重 + 段间查重 ----------------
+// 用字符二元组（bigram）算相似度，不依赖语义理解，专门抓"几乎是同一句换了几个字"这种重复。
+function charBigrams(str){
+  const s = str.replace(/[，。！？；：、""''（）()\s\[\]【】\-—]/g, "");
+  const set = new Set();
+  for(let i=0; i<s.length-1; i++) set.add(s.slice(i, i+2));
+  return set;
+}
+function similarity(a, b){
+  const A = charBigrams(a), B = charBigrams(b);
+  if(A.size === 0 || B.size === 0) return 0;
+  let inter = 0;
+  for(const g of A) if(B.has(g)) inter++;
+  return inter / Math.min(A.size, B.size); // 用较短一句的长度做分母，能抓住"长句包含了短句"这种包含式重复
+}
+const DEDUP_THRESHOLD = 0.55; // 相似度超过这个值，判定为重复
+const DEDUP_MIN_LEN = 15; // 短于这个字数的句子不参与查重（保护锚点句的合理重复，比如反复出现的价格锚点）
+
+function dedupText(text, priorText){
+  let lines = text.split("\n").map(l=>l.trim()).filter(Boolean);
+
+  // 段内查重：同一段里，后出现的相似句删掉，保留第一次出现的
+  const kept = [];
+  for(const line of lines){
+    const plain = line.replace(/^\[锚\]\s*/, "");
+    if(plain.length < DEDUP_MIN_LEN){ kept.push(line); continue; }
+    const isDup = kept.some(k => {
+      const kp = k.replace(/^\[锚\]\s*/, "");
+      return kp.length >= DEDUP_MIN_LEN && similarity(plain, kp) > DEDUP_THRESHOLD;
+    });
+    if(!isDup) kept.push(line);
+  }
+  lines = kept;
+
+  // 段间查重：跟前面已经生成的内容比，撞了就删
+  if(priorText && priorText.trim()){
+    const priorSentences = priorText.split(/[\n。！？]/).map(s=>s.trim()).filter(s=>s.length >= DEDUP_MIN_LEN);
+    lines = lines.filter(line => {
+      const plain = line.replace(/^\[锚\]\s*/, "");
+      if(plain.length < DEDUP_MIN_LEN) return true;
+      return !priorSentences.some(p => similarity(plain, p) > DEDUP_THRESHOLD);
+    });
+  }
+
+  return lines.join("\n");
+}
+
 function stripMetaCommentary(text){
   const metaPatterns = [
     /记住了/, /^那我现在/, /现在开始写/, /现在我来写/, /我来写这一段/, /下面是.{0,10}阶段/,
@@ -259,7 +306,8 @@ export default async function handler(req, res){
     const data = await r.json();
     if(!r.ok){ res.status(502).json({error:"DeepSeek 接口返回错误", detail:data}); return; }
     const rawText = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "";
-    const text = stripMetaCommentary(rawText);
+    const cleaned = stripMetaCommentary(rawText);
+    const text = dedupText(cleaned, priorText);
     res.status(200).json({ text });
   }catch(e){
     res.status(500).json({error:"生成失败："+String(e && e.message || e)});
