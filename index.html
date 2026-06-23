@@ -441,6 +441,9 @@ async function runOne(phaseId){
   renderOutput();
 }
 
+function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
+const CALL_DELAY_MS = 2500; // 每段生成之间人为停顿的时长，控制额度消耗节奏，不影响每段内容本身的长度/质量
+
 async function runAll(){
   if(state.running) return;
   state.running = true;
@@ -449,11 +452,13 @@ async function runAll(){
   const PHASES = PHASES_BY_STYLE[state.styleK];
   state.store = {}; PHASES.forEach(p=> state.store[p.id]={status:"idle"});
   renderOutput();
-  for(const ph of PHASES){
+  for(let i=0; i<PHASES.length; i++){
+    const ph = PHASES[i];
     state.store[ph.id] = {status:"loading"}; renderOutput();
     try{ state.store[ph.id] = {status:"done", lines: await callGenerate(ph.id, buildPriorText())}; }
     catch(e){ state.store[ph.id] = {status:"error", error:e.message}; }
     renderOutput();
+    if(i < PHASES.length - 1) await sleep(CALL_DELAY_MS);
   }
   go.disabled = false; go.textContent = "重新生成";
   state.running = false;
