@@ -359,12 +359,12 @@ function renderStyleCards(){
 function renderTrackPills(){
   const el = document.getElementById("trackPills");
   el.innerHTML = TRACKS.map(t => `<span class="pill${state.trackK===t.k?' on':''}" data-track="${t.k}">${esc(t.t)}</span>`).join("");
-  el.querySelectorAll(".pill").forEach(p=>{ p.onclick = ()=>{ state.trackK = p.dataset.track; }; });
+  el.querySelectorAll(".pill").forEach(p=>{ p.onclick = ()=>{ state.trackK = p.dataset.track; renderTrackPills(); }; });
 }
 function renderEmoPills(){
   const el = document.getElementById("emoPills");
   el.innerHTML = EMOS.map(e => `<span class="pill${state.emotionK===e.k?' on':''}" data-emo="${e.k}">${esc(e.t)}</span>`).join("");
-  el.querySelectorAll(".pill").forEach(p=>{ p.onclick = ()=>{ state.emotionK = p.dataset.emo; }; });
+  el.querySelectorAll(".pill").forEach(p=>{ p.onclick = ()=>{ state.emotionK = p.dataset.emo; renderEmoPills(); }; });
 }
 function renderDeadlinePills(){
   const el = document.getElementById("deadlinePills");
