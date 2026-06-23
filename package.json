@@ -1,8 +1,173 @@
-{
-  "name": "huatang-generator",
-  "version": "1.0.0",
-  "private": true,
-  "engines": {
-    "node": ">=18"
+ // /api/generate.js —— Vercel Serverless 函数
+// 前端发来 {styleK, phaseId, params}，这里组装系统提示词（含固定红线 + 该风格的可编辑限制 + 该阶段任务说明），
+// 调用 DeepSeek 实时生成这一段话术，返回 {text}。密钥只存在于 Vercel 环境变量，不出现在任何代码里。
+
+// ---------------- 年级路由 / 情绪入口（服务端语境数据，不是成品话术，仅供模型参考） ----------------
+const TRACKS = {
+  low:  { t:"大班-2年级·图形化", range:"大班到二年级",
+          weeks:["第一周建兴趣，拖拽图形块","第二周认识指令积木，学顺序/条件/循环","第三周AI入门，训练对话","第四周机器人进阶，加入巡视车"] },
+  high: { t:"3-6年级·Python", range:"三到六年级",
+          weeks:["第一周跑出第一段程序，代码控制机器人","第二周用代码写指令","第三周理解AI回应逻辑","第四周巡线/避障/语音，完成项目作品"] },
+  mix:  { t:"混合年级", range:"大班到六年级", weeks:[] }
+};
+const EMOS = {
+  era:      { t:"升学焦虑(升维版)", hint:"身边已有孩子在学校接触AI/编程，强调别掉队，不编造具体政策或机构名称" },
+  literacy: { t:"素养vs应试", hint:"对比刷题与编程思维，强调素养教育趋势" },
+  talent:   { t:"科技特长生", hint:"科技特长生是升学路径之一，窗口期在小学，不承诺保送/录取结果" },
+  hands:    { t:"动手成就感", hint:"强调孩子动手做出成果的成就感和专注力培养" }
+};
+
+// ---------------- 固定合规红线（不可被前端覆盖） ----------------
+const REDLINES = `
+【硬性红线 — 绝不触碰，优先级高于下面任何风格限制】
+- 课程是产品，机器人/硬件是交付载体，价值落点始终回到课程，不把硬件当主角卖。
+- 不讲「防沉迷/减少屏幕时间/戒手机」。
+- 不用「教育部/国家」等权威机构名称，不承诺升学、保送、考级结果。
+- 不编造库存数量、不用「限名额」「最后10个」等虚假限量；催单只能基于下方提供的真实库存/福利状态，未提供则不制造紧迫感。
+- 产品名称里「AI」与「编程」不能同时出现。
+- 不打包票孩子一定学会，不用绝对化用语（最/第一/100%/唯一）。
+- 不展示硬件的娱乐化表演（唱歌/讲笑话等才艺展示），硬件只能以"代码执行结果"的形式出现（写对就动、写错不动）。
+- 全文不出现任何等待或引用观众实时互动的表述（不说"评论区打出来我看到会回您""刚拍的妈妈""恭喜下单的妈妈"之类），当作连续循环播放、零互动的稳定话术来写。
+- 每句单独成行，口语化、可直接念，不写旁白、不写括号舞台提示、不用markdown、不加序号。
+- 这一段里，凡是复述核心信息（价格/产品名/赠品组合）的句子，行首加 [锚] 标记。`;
+
+// ---------------- 各风格默认限制（前端可编辑覆盖，这里是后端兜底默认值） ----------------
+const DEFAULT_STYLE_CONSTRAINTS = {
+  doc3: "语气：用客观事实和趋势制造紧迫感，不是情绪轰炸式焦虑；语气克制、冷静、像在摆事实讲道理，不要哭喊式渲染、不要堆砌感叹号式煽情。\n结构顺序：严格按十段递进——焦虑开场→事实紧迫感→痛点共鸣→主播自爆（必须是态度转折的桥梁，先怀疑后认可，不能脱离上下文单独出现）→场景铺垫→价值峰值→课程价值→价格锚点→不买代价→终值收尾。价格和信任信息必须在'不买的代价'那段之前就讲完，不能拖到最后才补。每段控制在5~8句。\n内容边界：制造紧迫感只能用两种来源——泛化的趋势性表述（比如'身边已经有家庭在动手了'），或者真实库存/福利里填的真实信息；绝对不能编造具体统计数字、政策条文、机构名称；硬件不能做成才艺表演，只能以'代码执行结果'出现。",
+  chenkai: "强转化、语速感强、直给不绕弯；先把价值和信任讲完才能进促单段；促单必须搭配'不让盲目拍'式刹车句，不能只逼单不给退路；不堆砌十问十答式罗列，异议照应简短带过即可。",
+  zhang: "整体语气柔和、像在跟朋友聊天，少用强push命令句；促单前必须先把信任和一价全含说清楚；可以用服务降级稀缺制造紧迫感，但不夸大、不威胁式催促。",
+  wangyu: "教学式、耐心讲解，促单语气要软，允许直接说'不合适不用拍'；必须包含按年级分层讲解的逻辑；信任段要包含明确的预期管理（说清楚这套能做到什么、不能做到什么）。",
+  fusion: "综合三种风格优点：开场留人快、价值讲解扎实、信任段诚实、促单段配刹车句、结尾干净；每段比单一风格略短，节奏紧凑；同一卖点不重复超过2次。"
+};
+
+// ---------------- 各风格 × 各阶段 的任务简述（brief，供模型创作，不是成品） ----------------
+const PHASES_BY_STYLE = {
+  doc3: [
+    {id:"p1", name:"焦虑开场·留人", tc:"0:00–1:00", brief:"开场留人：点明产品和目标人群，提出年级路由邀请（打在评论区/扣1扣2），带出情绪入口。"},
+    {id:"p2", name:"事实紧迫感", tc:"1:00–2:15", brief:"用情绪入口制造紧迫感，但强调这不是贩卖焦虑而是给解决方案；区分'会用AI工具'和'有编程思维'。"},
+    {id:"p3", name:"痛点共鸣·深挖", tc:"2:15–3:30", brief:"列举3种典型家长困境（不知道该不该学/补习刷题方向错/想布局科技特长生找不到路径），呼应到这套课能解决。"},
+    {id:"p4", name:"主播自爆·破防御", tc:"3:30–4:00", brief:"用第一人称小故事讲主播自己/家人最初也怀疑，后来发现孩子主动写代码让机器人动起来，态度转变。"},
+    {id:"p5", name:"场景铺垫·产品出场", tc:"4:00–4:45", brief:"对比'用AI工具聊天'和'写代码控制硬件'，强调代码写对就动、写错不动的即时反馈，这才是编程思维训练。"},
+    {id:"p6", name:"价值峰值·分层讲解", tc:"4:45–6:15", brief:"按年级路由讲清楚分层课程内容（按周里程碑），总结从'会用'到'能制作'的进阶；提一句规格（课时/时长/形式）。"},
+    {id:"p7", name:"课程价值+刚需出口", tc:"6:15–7:00", brief:"说清楚这套思维对孩子的实际用处（逻辑迁移到学科、科技特长生升学路径），落点是孩子能力的提升。"},
+    {id:"p8", name:"价格锚点·消除顾虑", tc:"7:00–8:00", brief:"价格对比（线下班更贵）+ 核心一价全含锚点 + 入门定位的期望管理 + 试错保障（试听/退款）。"},
+    {id:"p9", name:"不买的代价·紧迫感", tc:"8:00–8:50", brief:"用情绪入口+真实库存/福利状态制造紧迫感，配合'不让盲目拍'式刹车句。"},
+    {id:"p10", name:"终值金句+促单收尾", tc:"8:50–10:00", brief:"一句打动人心的终值金句（孩子未来某个瞬间） + 总结价值 + 点关注收尾指令。"}
+  ],
+  chenkai: [
+    {id:"c1", name:"开场·稀缺+福利钩", tc:"0:00–1:00", brief:"开场稀缺感+福利钩子（如果有真实福利则带出），简单带出品牌背书一句，邀请年级路由。"},
+    {id:"c2", name:"价值讲解·规格体系", tc:"1:00–3:30", brief:"按年级路由讲清楚分层课程内容，强调规格（课时/时长/形式），体系感要强。"},
+    {id:"c5", name:"信任道具·执照与现货", tc:"3:30–4:30", brief:"品牌背书+真实库存状态+核心一价全含锚点，建立信任。"},
+    {id:"c4", name:"闭单促拍·问年级促单", tc:"4:30–6:00", brief:"按年级路由直接促单，配真实福利/库存锚点，必须带'不让盲目拍'刹车句和年级对应提醒。"},
+    {id:"c6", name:"成交接球·备注关注", tc:"6:00–6:30", brief:"收尾指令：拍下后流程说明 + 点关注，不假设已经发生真实成交。"}
+  ],
+  zhang: [
+    {id:"z1", name:"开场留人·情绪钩", tc:"0:00–1:00", brief:"用情绪入口开场，柔和语气，带出年级路由。"},
+    {id:"z2", name:"价值讲解·四级进阶句", tc:"1:00–3:00", brief:"按年级路由简述课程内容，强调从会用到能制作的四级进阶感。"},
+    {id:"z3", name:"轻应答·刹车基调", tc:"3:00–4:00", brief:"柔和地预告顾虑会被提前说清楚，可带一条轻量异议示例（如试错保障）。"},
+    {id:"z5", name:"信任·一价全含", tc:"4:00–5:00", brief:"核心一价全含锚点，强调没有隐形消费、没有犹豫成本。"},
+    {id:"z4", name:"促单·刹车句+服务降级", tc:"5:00–6:30", brief:"促单，配真实库存/福利锚点+服务降级稀缺感+'不让盲目拍'刹车句，语气不强push。"}
+  ],
+  wangyu: [
+    {id:"w1", name:"年级征集·路由开场", tc:"0:00–1:00", brief:"按年级路由开场（扣1/扣2或混合邀请），说明分层课程不一样。"},
+    {id:"w2", name:"分层价值·按周里程碑", tc:"1:00–4:00", brief:"按周给出明确里程碑，强调每周孩子学到什么。"},
+    {id:"w3", name:"期望管理", tc:"4:00–5:30", brief:"诚实说明这套是入门，打比赛/科技特长长线是后续规划不含在内，但入门打地基绝对够。"},
+    {id:"w4", name:"信任·购买逻辑句", tc:"5:30–6:30", brief:"讲清楚硬件为何能听懂指令（孩子自己写的代码），强调这不是买玩具而是买这套编程能力。"},
+    {id:"w5", name:"促单·真锚点", tc:"6:30–7:30", brief:"促单语气要软，配真实库存/福利，允许说'不合适不用拍'。"},
+    {id:"w6", name:"关注收尾", tc:"7:30–8:00", brief:"收尾指令：点关注，不假设已成交。"}
+  ],
+  fusion: [
+    {id:"f1", name:"开场留人+年级征集", tc:"~60s", brief:"年级路由开场+情绪入口，简洁。"},
+    {id:"f2", name:"分层价值讲解", tc:"~3min", brief:"按年级路由讲分层内容+规格概述。"},
+    {id:"f4", name:"信任段", tc:"~60s", brief:"品牌背书+核心一价全含锚点+入门期望管理。"},
+    {id:"f5", name:"促单截单段", tc:"~90s", brief:"真实库存/福利锚点+刹车句，紧凑。"},
+    {id:"f6", name:"成交接球", tc:"~20s", brief:"收尾指令：流程说明+点关注。"}
+  ]
+};
+
+function buildTrackContext(trackK){
+  const tr = TRACKS[trackK] || TRACKS.low;
+  if(trackK === "mix"){
+    return `年级路由：混合年级，覆盖大班到六年级，开场邀请所有年级打在评论区，价值讲解段用两条赛道（图形化线/Python线）各一句话概览，不展开周计划。`;
+  }
+  return `年级路由：${tr.t}（${tr.range}）。参考周计划（不要逐字照搬，用自己的话重新组织）：${tr.weeks.join("；")}。`;
+}
+function buildEmoContext(emotionK){
+  const e = EMOS[emotionK] || EMOS.era;
+  return `情绪入口：${e.t}。要点：${e.hint}。`;
+}
+
+function buildSystemPrompt(styleK, styleConstraint){
+  const constraint = (styleConstraint||"").trim() || DEFAULT_STYLE_CONSTRAINTS[styleK] || "";
+  return `你是核桃编程「小布2.0」品类的资深直播话术策划，正在写一套可连续循环播放的直播带货话术。
+
+${REDLINES}
+
+【本风格的限制（在不违反上面硬性红线的前提下尽量贴合）】
+${constraint}
+
+【输出格式】
+只输出这一阶段主播口播的中文话术，不要标题、不要解释、不要markdown。`;
+}
+
+function buildUserPrompt(phase, params){
+  const stock = (params.stock||"").trim();
+  const benefit = (params.benefit||"").trim();
+  const productName = (params.productName||"").trim() || "小布2.0";
+  const price = (params.price||"").trim() || "199";
+  const spec = (params.spec||"").trim() || "30天24节正课，每节60到90分钟，中间有休息";
+  const bundle = (params.bundle||"").trim() || "机器人、配套书";
+  const brand = (params.brand||"").trim() || "核桃编程做编程起家十几年，官方直播间，营业执照带红章";
+  const coreSkill = (params.coreSkill||"").trim() || "编程思维";
+
+  return `本场参数：
+- 产品名称：${productName}
+- 价格：${price}
+- 规格亮点：${spec}
+- 随课赠品/配件：${bundle}
+- 品牌背书：${brand}
+- 核心能力词：${coreSkill}
+- ${buildTrackContext(params.trackK)}
+- ${buildEmoContext(params.emotionK)}
+- 真实库存/活动状态：${stock || "未提供——本场不要出现任何限量、倒计时或催单施压"}
+- 今日福利机制：${benefit || "未提供——不要编造具体赠品"}
+
+现在只写【${phase.name}】这一阶段（${phase.tc}）的话术，约6~9句。
+该阶段任务：${phase.brief}`;
+}
+
+export default async function handler(req, res){
+  if(req.method !== "POST"){ res.status(405).json({error:"只支持 POST"}); return; }
+  const key = process.env.DEEPSEEK_API_KEY;
+  if(!key){ res.status(500).json({error:"服务器还没配置 DEEPSEEK_API_KEY，请到 Vercel 环境变量里添加。"}); return; }
+
+  try{
+    const { styleK, phaseId, params, styleConstraint } = req.body || {};
+    const phases = PHASES_BY_STYLE[styleK];
+    if(!phases){ res.status(400).json({error:"未知风格："+styleK}); return; }
+    const phase = phases.find(p=>p.id===phaseId);
+    if(!phase){ res.status(400).json({error:"未知阶段："+phaseId}); return; }
+
+    const r = await fetch("https://api.deepseek.com/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type":"application/json", "Authorization":"Bearer "+key },
+      body: JSON.stringify({
+        model: "deepseek-chat",
+        max_tokens: 1000,
+        temperature: 0.85,
+        messages: [
+          { role:"system", content: buildSystemPrompt(styleK, styleConstraint) },
+          { role:"user", content: buildUserPrompt(phase, params||{}) }
+        ]
+      })
+    });
+    const data = await r.json();
+    if(!r.ok){ res.status(502).json({error:"DeepSeek 接口返回错误", detail:data}); return; }
+    const text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "";
+    res.status(200).json({ text });
+  }catch(e){
+    res.status(500).json({error:"生成失败："+String(e && e.message || e)});
   }
 }
+
+// 同时导出阶段表/默认限制，前端可以通过 /api/meta 等方式获取（这里直接内嵌给前端用，见 index.html 里的同名常量）
