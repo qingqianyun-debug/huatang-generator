@@ -155,10 +155,6 @@
         <label class="lbl">今日促单机制 <span class="hint">选一个，不选则不催单</span></label>
         <div class="pills" id="deadlinePills"></div>
       </div>
-      <div class="fld">
-        <label class="lbl">今日福利机制 <span class="hint">阶梯福利</span></label>
-        <textarea id="f_benefit" placeholder="例：拍一发八——两台机器人、两本书、200次编程实战。留空则不编具体赠品。"></textarea>
-      </div>
       <div class="btns">
         <button class="go" id="goBtn">生成循环话术</button>
       </div>
@@ -263,7 +259,7 @@ const PHASES_BY_STYLE = {
   ]
 };
 const DEFAULT_STYLE_CONSTRAINTS = {
-  doc3: "语气：用客观事实和趋势制造紧迫感，不是情绪轰炸式焦虑；语气克制、冷静、像在摆事实讲道理，不要哭喊式渲染、不要堆砌感叹号式煽情。\n结构顺序：严格按十段递进——焦虑开场→事实紧迫感→痛点共鸣→主播自爆（必须是态度转折的桥梁，先怀疑后认可，不能脱离上下文单独出现）→场景铺垫→价值峰值→课程价值→价格锚点→不买代价→终值收尾。价格和信任信息必须在'不买的代价'那段之前就讲完，不能拖到最后才补。每段控制在5~8句。\n内容边界：制造紧迫感只能用两种来源——泛化的趋势性表述（比如'身边已经有家庭在动手了'），或者今日促单机制/福利里填的真实信息；绝对不能编造具体统计数字、政策条文、机构名称；硬件不能做成才艺表演，只能以'代码执行结果'出现。",
+  doc3: "语气：用客观事实和趋势制造紧迫感，不是情绪轰炸式焦虑；语气克制、冷静、像在摆事实讲道理，不要哭喊式渲染、不要堆砌感叹号式煽情。\n结构顺序：严格按十段递进——焦虑开场→事实紧迫感→痛点共鸣→主播自爆（必须是态度转折的桥梁，先怀疑后认可，不能脱离上下文单独出现）→场景铺垫→价值峰值→课程价值→价格锚点→不买代价→终值收尾。价格和信任信息必须在'不买的代价'那段之前就讲完，不能拖到最后才补。每段控制在5~8句。\n内容边界：制造紧迫感只能用两种来源——泛化的趋势性表述（比如'身边已经有家庭在动手了'），或者今日促单机制里填的真实信息；绝对不能编造具体统计数字、政策条文、机构名称；硬件不能做成才艺表演，只能以'代码执行结果'出现。",
   chenkai: "语气：强转化、语速感强、直给不绕弯，像销售在帮你做决定，但不能变成单纯施压。\n结构顺序：开场·稀缺+福利钩→价值讲解·规格体系→信任道具→闭单促拍→成交接球。价值和信任必须在促单段之前讲完（顺序错了会导致退款率升高）；促单段必须带'不让盲目拍'刹车句，不能只逼单不给退路。\n内容边界：不堆砌十问十答式罗列做主线内容，异议简短带过即可；规格体系要具体（课时/时长/形式）；不编造库存数量。",
   zhang: "语气：柔和、像在跟朋友聊天分享，少用强push命令句，情绪共鸣优先于硬卖。\n结构顺序：开场留人·情绪钩→价值讲解·四级进阶句→轻应答·刹车基调→信任·一价全含→促单·刹车句+服务降级。一价全含的信任段必须在促单段之前讲完。\n内容边界：不展示机器人功能罗列式硬件演示；服务降级稀缺感可以用，但不能夸大或威胁式催促；不用贬损式对比抬高自己。",
   wangyu: "语气：教学式、耐心讲解，像老师在跟家长解释课程，不强推、不施压；促单语气要软，允许直接说'不合适不用拍'。\n结构顺序：年级征集·路由开场→分层价值·按周里程碑→期望管理→信任·购买逻辑句→促单·真锚点→关注收尾。分层内容必须按周给出明确里程碑，不能笼统讲。\n内容边界：不用强逼单话术；期望管理必须诚实说明这套是入门，长线规划不含在内。",
@@ -295,7 +291,6 @@ function esc(s){ return s.replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&
 
 const state = {
   styleK:"doc3", trackK:"low", emotionK:"era", deadlineK:"none",
-  benefit:"",
   productName:"", price:"", origPrice:"", spec:"", bundle:"", brand:"", coreSkill:"",
   styleConstraints:{},
   store:{},
@@ -305,7 +300,7 @@ STYLES.forEach(s=> state.styleConstraints[s.k] = DEFAULT_STYLE_CONSTRAINTS[s.k])
 
 function params(){
   return {
-    trackK:state.trackK, emotionK:state.emotionK, deadlineK:state.deadlineK, benefit:state.benefit,
+    trackK:state.trackK, emotionK:state.emotionK, deadlineK:state.deadlineK,
     productName:state.productName, price:state.price, origPrice:state.origPrice, spec:state.spec,
     bundle:state.bundle, brand:state.brand, coreSkill:state.coreSkill
   };
@@ -465,8 +460,7 @@ async function runAll(){
 }
 
 [["f_productName","productName"],["f_price","price"],["f_origPrice","origPrice"],["f_spec","spec"],
- ["f_bundle","bundle"],["f_brand","brand"],["f_coreSkill","coreSkill"],
- ["f_benefit","benefit"]].forEach(([id,key])=>{
+ ["f_bundle","bundle"],["f_brand","brand"],["f_coreSkill","coreSkill"]].forEach(([id,key])=>{
   document.getElementById(id).addEventListener("input", e=>{ state[key] = e.target.value; });
 });
 document.getElementById("f_styleConstraint").addEventListener("input", e=>{
