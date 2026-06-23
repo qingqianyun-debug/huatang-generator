@@ -6,7 +6,7 @@
 const CORE_MECHANISM = "无论哪个年级，核心机制统一是「写代码控制机器人」——大班到二年级用拖拽图形化代码块，三到六年级直接写文本代码；写代码控制之后，机器人还能变成孩子的家教，辅导语数英学习，这是除了编程能力本身之外的额外价值点，价值讲解段应该提到。";
 const TRACKS = {
   low:  { t:"大班-2年级·图形化", range:"大班到二年级",
-          weeks:["第一周建兴趣，拖拽图形块","第二周认识指令积木，学顺序/条件/循环","第三周AI入门，训练对话","第四周机器人进阶，加入巡视车"] },
+          weeks:["第一周建兴趣，拖拽图形块","第二周认识指令积木，学顺序/条件/循环","第三周AI入门，训练对话","第四周学进阶内容，挑战巡视车项目"] },
   high: { t:"3-6年级·Python", range:"三到六年级",
           weeks:["第一周跑出第一段程序，代码控制机器人","第二周用代码写指令","第三周理解AI回应逻辑","第四周巡线/避障/语音，完成项目作品"] },
   mix:  { t:"混合年级", range:"大班到六年级", weeks:[] }
@@ -111,6 +111,8 @@ function buildSystemPrompt(styleK, styleConstraint){
   const constraint = (styleConstraint||"").trim() || DEFAULT_STYLE_CONSTRAINTS[styleK] || "";
   return `你是核桃编程「小布2.0」品类的资深直播话术策划，正在写一套可连续循环播放的直播带货话术。
 
+**最重要的一条，必须贯穿全文**：这是一套编程课程，配套机器人只是孩子上课时用来实操、验证代码的教学工具/赠品。你卖的是课程和孩子获得的编程能力，机器人本身不是卖点，永远不要把机器人当成话术的主角或核心吸引力。
+
 ${REDLINES}
 
 【本风格的限制（在不违反上面硬性红线的前提下尽量贴合）】
@@ -143,7 +145,7 @@ function buildUserPrompt(phase, params){
   const deadlineText = buildDeadlineText(params.deadlineK, price, origPrice);
 
   return `本场参数：
-- 产品名称：${productName}
+- 产品名称：${productName}（这是一套"编程课程+配套机器人"组合产品，课程是主体、机器人是教学载体/赠品，不是交通工具、不是单纯玩具；提到它时用"这套/这个"，不要用"这辆""这台车"之类不当量词）
 - 价格：${price}
 - 规格亮点：${spec}
 - 随课赠品/配件：${bundle}
