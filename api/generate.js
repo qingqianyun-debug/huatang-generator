@@ -202,7 +202,7 @@ function buildUserPrompt(phase, params, priorText, styleK){
   const origPrice = (params.origPrice||"").trim();
   const spec = (params.spec||"").trim() || "30天24节正课，每节60到90分钟，中间有休息";
   const bundle = (params.bundle||"").trim() || "机器人、配套书";
-  const brand = (params.brand||"").trim() || "核桃编程做编程起家十几年，官方直播间，营业执照带红章";
+  const brand = (params.brand||"").trim() || "核桃编程做编程起家8年，官方直播间，营业执照带红章";
   const coreSkill = (params.coreSkill||"").trim() || "编程思维";
   const deadlineText = buildDeadlineText(params.deadlineK, price, origPrice);
   const includeFact = FACT_PHASE[styleK] === phase.id;
