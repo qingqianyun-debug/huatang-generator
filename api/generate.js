@@ -144,9 +144,9 @@ export default async function handler(req, res){
   try{
     const { styleK, phaseId, params, styleConstraint } = req.body || {};
     const phases = PHASES_BY_STYLE[styleK];
-    if(!phases){ res.status(400).json({error:"未知风格："+styleK}); return; }
+    if(!phases){ res.status(400).json({error:"未知风格："+styleK+" | 收到的req.body："+JSON.stringify(req.body)}); return; }
     const phase = phases.find(p=>p.id===phaseId);
-    if(!phase){ res.status(400).json({error:"未知阶段："+phaseId}); return; }
+    if(!phase){ res.status(400).json({error:"未知阶段："+phaseId+" | 收到的req.body："+JSON.stringify(req.body)}); return; }
 
     const r = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
