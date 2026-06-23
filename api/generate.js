@@ -12,11 +12,23 @@ const TRACKS = {
   mix:  { t:"混合年级", range:"大班到六年级", weeks:[] }
 };
 const EMOS = {
-  era:      { t:"AI不掉队", hint:"很多家长着急让孩子学AI但不知道该怎么开始接触；有些家长自己已经感觉到AI时代可能被淘汰的危机感。可以用这个真实背景作为事实依据：从2025年秋季学期起，已经有城市（比如北京）规定中小学每学年要上人工智能通识课，不少于8课时——这说明AI教育正在变成学校教学的一部分，不是少数家庭才关注的事。引用时只说'已经有城市的学校把AI课纳入正式教学了'这类概括性表述，不要编造具体文件名、文号或精确条款。除了这条，不要再编造别的具体政策或机构名称。" },
-  literacy: { t:"数理思维底层逻辑", hint:"刷题练的是记忆力，编程练的是拆解问题、找规律、验证答案这套底层逻辑，这套逻辑跟数理思维是相通的，比单纯刷题更扎实。" },
-  talent:   { t:"科技特长生", hint:"科技特长生是小升初/中考阶段的一条升学通道，窗口期在小学，更适合三到六年级（Python线）的孩子；如果当前年级路由是大班到二年级（图形化线），这条要弱化处理，重点放在打基础而不是冲特长生，不要勉强往这个方向靠。可以用这条真实信息：目前全国大约88%的地区已经推出了科技特长生相关政策通道。表达逻辑是'学编程是走科技特长生这条路的基础'，只说存在这个赛道、学编程能打这个基础，不要具体点名某个赛事的名字，也不能说成'学了这套课就能被特长生政策录取/保送'这种因果承诺——这套课只是入门打基础，后面走多远要靠孩子自己练、自己考。不承诺保送/录取结果。" },
-  hands:    { t:"动手·科创作品", hint:"强调孩子动手做出能展示的科创作品，培养坐得住、肯钻研的专注力；可以提一句这类作品有机会拿去参加科创类比赛，但不承诺获奖或保证入选。" }
+  era:      { t:"AI不掉队",
+    theme:"很多家长着急让孩子学AI但不知道该怎么开始接触；有些家长自己已经感觉到AI时代可能被淘汰的危机感。",
+    hint:"很多家长着急让孩子学AI但不知道该怎么开始接触；有些家长自己已经感觉到AI时代可能被淘汰的危机感。可以用这个真实背景作为事实依据：从2025年秋季学期起，已经有城市（比如北京）规定中小学每学年要上人工智能通识课，不少于8课时——这说明AI教育正在变成学校教学的一部分，不是少数家庭才关注的事。引用时只说'已经有城市的学校把AI课纳入正式教学了'这类概括性表述，不要编造具体文件名、文号或精确条款。除了这条，不要再编造别的具体政策或机构名称。" },
+  literacy: { t:"数理思维底层逻辑",
+    theme:"刷题练的是记忆力，编程练的是拆解问题、找规律、验证答案这套底层逻辑，这套逻辑跟数理思维是相通的，比单纯刷题更扎实。",
+    hint:"刷题练的是记忆力，编程练的是拆解问题、找规律、验证答案这套底层逻辑，这套逻辑跟数理思维是相通的，比单纯刷题更扎实。" },
+  talent:   { t:"科技特长生",
+    theme:"科技特长生是小升初/中考阶段的一条升学通道，窗口期在小学，更适合三到六年级（Python线）的孩子；如果当前年级路由是大班到二年级（图形化线），这条要弱化处理，重点放在打基础而不是冲特长生，不要勉强往这个方向靠。",
+    hint:"科技特长生是小升初/中考阶段的一条升学通道，窗口期在小学，更适合三到六年级（Python线）的孩子；如果当前年级路由是大班到二年级（图形化线），这条要弱化处理，重点放在打基础而不是冲特长生，不要勉强往这个方向靠。可以用这条真实信息：目前全国大约88%的地区已经推出了科技特长生相关政策通道。表达逻辑是'学编程是走科技特长生这条路的基础'，只说存在这个赛道、学编程能打这个基础，不要具体点名某个赛事的名字，也不能说成'学了这套课就能被特长生政策录取/保送'这种因果承诺——这套课只是入门打基础，后面走多远要靠孩子自己练、自己考。不承诺保送/录取结果。" },
+  hands:    { t:"动手·科创作品",
+    theme:"强调孩子动手做出能展示的科创作品，培养坐得住、肯钻研的专注力。",
+    hint:"强调孩子动手做出能展示的科创作品，培养坐得住、肯钻研的专注力；可以提一句这类作品有机会拿去参加科创类比赛，但不承诺获奖或保证入选。" }
 };
+
+// 每种风格里，只有指定的这一段才能拿到情绪入口的完整版（含具体事实/数字），其余段落只拿到不含具体事实的轻量版主题，
+// 防止同一条事实在多段里被重复使用。
+const FACT_PHASE = { doc3:"p2", chenkai:null, zhang:"z1", wangyu:null, fusion:"f1" };
 
 // ---------------- 固定合规红线（不可被前端覆盖） ----------------
 const REDLINES = `
@@ -104,9 +116,10 @@ function buildTrackContext(trackK){
   }
   return `年级路由：${tr.t}（${tr.range}）。参考周计划（不要逐字照搬，用自己的话重新组织）：${tr.weeks.join("；")}。`;
 }
-function buildEmoContext(emotionK){
+function buildEmoContext(emotionK, includeFact){
   const e = EMOS[emotionK] || EMOS.era;
-  return `情绪入口：${e.t}。要点：${e.hint}`;
+  const text = includeFact ? e.hint : e.theme;
+  return `情绪入口：${e.t}。要点：${text}`;
 }
 
 function buildSystemPrompt(styleK, styleConstraint){
@@ -135,7 +148,7 @@ function buildDeadlineText(deadlineK, price, origPrice){
   return d ? d.text : "";
 }
 
-function buildUserPrompt(phase, params, priorText){
+function buildUserPrompt(phase, params, priorText, styleK){
   const benefit = (params.benefit||"").trim();
   const productName = (params.productName||"").trim() || "小布2.0";
   const price = (params.price||"").trim() || "199";
@@ -145,6 +158,7 @@ function buildUserPrompt(phase, params, priorText){
   const brand = (params.brand||"").trim() || "核桃编程做编程起家十几年，官方直播间，营业执照带红章";
   const coreSkill = (params.coreSkill||"").trim() || "编程思维";
   const deadlineText = buildDeadlineText(params.deadlineK, price, origPrice);
+  const includeFact = FACT_PHASE[styleK] === phase.id;
   const prior = (priorText||"").trim();
   const priorBlock = prior
     ? `\n【前面段落已经讲过的内容，不要重复这些具体表述——同一个事实/卖点只详细讲一次，这一段要讲新的角度或推进到下一步，不要把前面说过的话换种方式再说一遍】\n${prior.slice(-1200)}\n`
@@ -159,7 +173,7 @@ function buildUserPrompt(phase, params, priorText){
 - 核心能力词：${coreSkill}
 - 核心机制：${CORE_MECHANISM}
 - ${buildTrackContext(params.trackK)}
-- ${buildEmoContext(params.emotionK)}
+- ${buildEmoContext(params.emotionK, includeFact)}
 - 今日促单机制：${deadlineText || "未选择——本场不要出现任何限量、倒计时或催单施压"}
 - 今日福利机制：${benefit || "未提供——不要编造具体赠品"}
 ${priorBlock}
@@ -188,7 +202,7 @@ export default async function handler(req, res){
         temperature: 0.85,
         messages: [
           { role:"system", content: buildSystemPrompt(styleK, styleConstraint) },
-          { role:"user", content: buildUserPrompt(phase, params||{}, priorText) }
+          { role:"user", content: buildUserPrompt(phase, params||{}, priorText, styleK) }
         ]
       })
     });
