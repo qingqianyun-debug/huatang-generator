@@ -138,8 +138,14 @@ ${REDLINES}
 【本风格的限制（在不违反上面硬性红线的前提下尽量贴合）】
 ${constraint}
 
-【输出格式】
-只输出这一阶段主播口播的中文话术，不要标题、不要解释、不要markdown。`;
+【输出格式 — 极其重要，必须严格遵守】
+直接输出第一句台词，不要有任何其他内容。
+绝对禁止输出以下任何形式的内容（这些都不是台词，是在跟我对话，绝对不能出现）：
+- 禁止确认/复述指令，比如"这条红线我记住了""明白了""好的"。
+- 禁止宣布你要做什么，比如"那我现在开始写XX阶段的话术""下面是XX阶段的内容""我来写这一段"。
+- 禁止任何对当前任务/阶段名称/格式要求的说明或重复。
+- 禁止任何开头的过渡句、解释句、元评论。
+第一行必须直接是主播说的第一句台词，没有任何前置内容。`;
 }
 
 function buildDeadlineText(deadlineK, price, origPrice){
@@ -188,6 +194,18 @@ ${priorBlock}
 该阶段任务：${phase.brief}`;
 }
 
+function stripMetaCommentary(text){
+  const metaPatterns = [
+    /记住了/, /^那我现在/, /现在开始写/, /现在我来写/, /我来写这一段/, /下面是.{0,10}阶段/,
+    /这一阶段的话术/, /这条红线/, /【.{1,20}】.{0,10}阶段/, /^明白[了，]/, /^好的[，,]/
+  ];
+  return text.split("\n").filter(line => {
+    const t = line.trim();
+    if(!t) return false;
+    return !metaPatterns.some(re => re.test(t));
+  }).join("\n");
+}
+
 export default async function handler(req, res){
   if(req.method !== "POST"){ res.status(405).json({error:"只支持 POST"}); return; }
   const key = process.env.DEEPSEEK_API_KEY;
@@ -215,7 +233,8 @@ export default async function handler(req, res){
     });
     const data = await r.json();
     if(!r.ok){ res.status(502).json({error:"DeepSeek 接口返回错误", detail:data}); return; }
-    const text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "";
+    const rawText = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "";
+    const text = stripMetaCommentary(rawText);
     res.status(200).json({ text });
   }catch(e){
     res.status(500).json({error:"生成失败："+String(e && e.message || e)});
