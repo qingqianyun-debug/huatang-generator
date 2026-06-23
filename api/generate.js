@@ -59,7 +59,7 @@ const PHASES_BY_STYLE = {
     {id:"p10", name:"终值金句+促单收尾", tc:"8:50–10:00", brief:"一句打动人心的终值金句（孩子未来某个瞬间） + 总结价值 + 点关注收尾指令，不要编造任何具体运营细节（不要发明短信通知、班主任联系、24小时内联系、分班方式、激活码这类没有提供依据的具体流程）。"}
   ],
   chenkai: [
-    {id:"c1", name:"开场·稀缺+福利钩", tc:"0:00–1:00", brief:"开场稀缺感+福利钩子（如果有真实福利则带出），简单带出品牌背书一句，邀请年级路由。"},
+    {id:"c1", name:"开场·稀缺+福利钩", tc:"0:00–1:00", brief:"开场抓人留人，点明产品和目标人群，营造一点稀缺感悬念（不展开讲细节，细节后面段落会讲），邀请年级路由；不要提品牌资质/营业执照这类信任背书内容，那是后面信任段的任务。"},
     {id:"c2", name:"价值讲解·规格体系", tc:"1:00–3:30", brief:"按年级路由讲清楚分层课程内容，核心都是'写代码控制机器人'；强调规格（课时/时长/形式），体系感要强；提一句写代码控制后机器人能变身家教辅导语数英。"},
     {id:"c5", name:"信任道具·执照与一价全含", tc:"3:30–4:30", brief:"品牌背书+今日促单机制+核心一价全含锚点，建立信任。"},
     {id:"c4", name:"闭单促拍·问年级促单", tc:"4:30–6:00", brief:"按年级路由直接促单，配真实福利/库存锚点，必须带'不让盲目拍'刹车句和年级对应提醒。"},
@@ -135,7 +135,7 @@ function buildDeadlineText(deadlineK, price, origPrice){
   return d ? d.text : "";
 }
 
-function buildUserPrompt(phase, params){
+function buildUserPrompt(phase, params, priorText){
   const benefit = (params.benefit||"").trim();
   const productName = (params.productName||"").trim() || "小布2.0";
   const price = (params.price||"").trim() || "199";
@@ -145,6 +145,10 @@ function buildUserPrompt(phase, params){
   const brand = (params.brand||"").trim() || "核桃编程做编程起家十几年，官方直播间，营业执照带红章";
   const coreSkill = (params.coreSkill||"").trim() || "编程思维";
   const deadlineText = buildDeadlineText(params.deadlineK, price, origPrice);
+  const prior = (priorText||"").trim();
+  const priorBlock = prior
+    ? `\n【前面段落已经讲过的内容，不要重复这些具体表述——同一个事实/卖点只详细讲一次，这一段要讲新的角度或推进到下一步，不要把前面说过的话换种方式再说一遍】\n${prior.slice(-1200)}\n`
+    : "";
 
   return `本场参数：
 - 产品名称：${productName}（这是一套"编程课程+配套机器人"组合产品，课程是主体、机器人是教学载体/赠品，不是交通工具、不是单纯玩具；提到它时用"这套/这个"，不要用"这辆""这台车"之类不当量词）
@@ -158,7 +162,7 @@ function buildUserPrompt(phase, params){
 - ${buildEmoContext(params.emotionK)}
 - 今日促单机制：${deadlineText || "未选择——本场不要出现任何限量、倒计时或催单施压"}
 - 今日福利机制：${benefit || "未提供——不要编造具体赠品"}
-
+${priorBlock}
 现在只写【${phase.name}】这一阶段（${phase.tc}）的话术，约6~9句。
 该阶段任务：${phase.brief}`;
 }
@@ -169,7 +173,7 @@ export default async function handler(req, res){
   if(!key){ res.status(500).json({error:"服务器还没配置 DEEPSEEK_API_KEY，请到 Vercel 环境变量里添加。"}); return; }
 
   try{
-    const { styleK, phaseId, params, styleConstraint } = req.body || {};
+    const { styleK, phaseId, params, styleConstraint, priorText } = req.body || {};
     const phases = PHASES_BY_STYLE[styleK];
     if(!phases){ res.status(400).json({error:"未知风格："+styleK+" | 收到的req.body："+JSON.stringify(req.body)}); return; }
     const phase = phases.find(p=>p.id===phaseId);
@@ -184,7 +188,7 @@ export default async function handler(req, res){
         temperature: 0.85,
         messages: [
           { role:"system", content: buildSystemPrompt(styleK, styleConstraint) },
-          { role:"user", content: buildUserPrompt(phase, params||{}) }
+          { role:"user", content: buildUserPrompt(phase, params||{}, priorText) }
         ]
       })
     });
