@@ -3,257 +3,206 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>小布2.0 · 直播话术生成器</title>
+<title>小布2.0 · 直播话术生成器（联网版）</title>
 <style>
-  .xb *{box-sizing:border-box;margin:0;padding:0}
-  .xb{
+  :root{
     --ink:#14161B; --panel:#1C1F26; --raised:#242832; --hair:#2E333D;
     --tx:#ECEEF2; --tx-mut:#8A909C; --tx-dim:#5C636E;
     --live:#FF5247; --anchor:#3FD9C8; --warm:#FFC24B;
     --font-sans:-apple-system,"PingFang SC","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
     --font-mono:ui-monospace,"SF Mono","Menlo","Consolas",monospace;
-    background:var(--ink);color:var(--tx);font-family:var(--font-sans);-webkit-font-smoothing:antialiased;line-height:1.5;min-height:100vh
   }
-  .xb .wrap{max-width:1180px;margin:0 auto;padding:22px 20px 80px}
-  .xb .top{display:flex;align-items:center;gap:14px;padding-bottom:18px;border-bottom:1px solid var(--hair);margin-bottom:22px;flex-wrap:wrap}
-  .xb .livedot{width:10px;height:10px;border-radius:50%;background:var(--live);animation:xbpulse 1.8s infinite;flex:none}
-  @keyframes xbpulse{0%{box-shadow:0 0 0 0 rgba(255,82,71,.5)}70%{box-shadow:0 0 0 9px rgba(255,82,71,0)}100%{box-shadow:0 0 0 0 rgba(255,82,71,0)}}
-  .xb .title{font-size:19px;font-weight:800;letter-spacing:-.01em}
-  .xb .title b{color:var(--live)}
-  .xb .sub{font-size:12.5px;color:var(--tx-mut);font-family:var(--font-mono);letter-spacing:.02em}
-  .xb .tag{margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--anchor);border:1px solid var(--hair);padding:4px 9px;border-radius:20px}
-  .xb .grid{display:grid;grid-template-columns:340px 1fr;gap:26px;align-items:start}
-  @media(max-width:820px){.xb .grid{grid-template-columns:1fr;gap:20px}}
-  .xb .panel{background:var(--panel);border:1px solid var(--hair);border-radius:14px;padding:20px;position:sticky;top:16px}
-  @media(max-width:820px){.xb .panel{position:static}}
-  .xb .fld{margin-bottom:18px}.xb .fld:last-child{margin-bottom:0}
-  .xb .lbl{display:block;font-size:12px;font-weight:700;color:var(--tx);margin-bottom:9px}
-  .xb .lbl .hint{font-weight:400;color:var(--tx-dim);font-size:11px;margin-left:6px;font-family:var(--font-mono)}
-  .xb .pills{display:flex;flex-wrap:wrap;gap:7px}
-  .xb .pill{font-size:12.5px;padding:7px 12px;border-radius:8px;border:1px solid var(--hair);background:var(--raised);color:var(--tx-mut);cursor:pointer;transition:.14s;user-select:none}
-  .xb .pill:hover{border-color:#3d4351;color:var(--tx)}
-  .xb .pill.on{background:var(--live);border-color:var(--live);color:#fff;font-weight:600}
-  .xb .stylecard{display:flex;flex-direction:column;gap:6px;width:100%;text-align:left;padding:9px 12px;border-radius:8px;border:1px solid var(--hair);background:var(--raised);color:var(--tx-mut);cursor:pointer;margin-bottom:7px}
-  .xb .stylecard:hover{border-color:#3d4351}
-  .xb .stylecard.on{border-color:var(--live);background:rgba(255,82,71,.08)}
-  .xb .stylecard .st{font-size:12.5px;font-weight:700;color:var(--tx)}
-  .xb .stylecard.on .st{color:var(--live)}
-  .xb .stylecard .sd{font-size:11px;color:var(--tx-mut);font-family:var(--font-mono)}
-  .xb textarea{width:100%;background:var(--raised);border:1px solid var(--hair);color:var(--tx);border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit}
-  .xb input.ipt{width:100%;background:var(--raised);border:1px solid var(--hair);color:var(--tx);border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit}
-  .xb input.ipt:focus{outline:2px solid var(--anchor);outline-offset:1px;border-color:transparent}
-  .xb input.ipt::placeholder{color:var(--tx-dim)}
-  .xb .product{margin-bottom:18px;border:1px solid var(--hair);border-radius:10px;padding:14px;background:rgba(63,217,200,.04)}
-  .xb .product summary{font-size:12.5px;font-weight:700;color:var(--anchor);cursor:pointer;list-style:none}
-  .xb .product summary::-webkit-details-marker{display:none}
-  .xb .product:not([open]) summary::before{content:"▸ 产品信息"}
-  .xb .product[open] summary::before{content:"▾ 产品信息"}
-  .xb .product .pfld{margin-top:11px}
-  .xb .product .pfld label{display:block;font-size:11px;color:var(--tx-mut);margin-bottom:5px;font-family:var(--font-mono)}
-  .xb textarea:focus{outline:2px solid var(--anchor);outline-offset:1px;border-color:transparent}
-  .xb textarea{resize:vertical;min-height:54px;line-height:1.5}
-  .xb textarea::placeholder{color:var(--tx-dim)}
-  .xb .btns{display:flex;gap:8px;margin-top:4px}
-  .xb .go{flex:1;padding:13px;border:none;border-radius:10px;background:var(--live);color:#fff;font-size:14.5px;font-weight:800;cursor:pointer;transition:.14s}
-  .xb .go:hover{filter:brightness(1.08)}
-  .xb .reroll{padding:13px 14px;border:1px solid var(--hair);border-radius:10px;background:var(--raised);color:var(--anchor);font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
-  .xb .reroll:hover{border-color:var(--anchor)}
-  .xb .reroll:disabled{opacity:.4;cursor:not-allowed}
-  .xb .redlines{margin-top:18px;border-top:1px solid var(--hair);padding-top:14px}
-  .xb .redlines summary{font-size:11.5px;font-weight:700;color:var(--tx-mut);cursor:pointer;list-style:none;font-family:var(--font-mono)}
-  .xb .redlines summary::-webkit-details-marker{display:none}
-  .xb .redlines summary::before{content:"▸ ";color:var(--anchor)}
-  .xb .redlines[open] summary::before{content:"▾ "}
-  .xb .redlines ul{margin:11px 0 0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:7px}
-  .xb .redlines li{font-size:11.5px;color:var(--tx-mut);line-height:1.5;padding-left:16px;position:relative}
-  .xb .redlines li::before{content:"";position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:1px;background:var(--live)}
-  .xb .out{min-height:300px}
-  .xb .outhead{display:flex;align-items:center;gap:12px;margin-bottom:18px;min-height:34px;flex-wrap:wrap}
-  .xb .outhead h2{font-size:14px;font-weight:700}
-  .xb .outhead .meta{font-family:var(--font-mono);font-size:11.5px;color:var(--tx-mut)}
-  .xb .copyall{margin-left:auto;font-size:12px;font-weight:600;color:var(--anchor);background:transparent;border:1px solid var(--hair);padding:6px 12px;border-radius:8px;cursor:pointer}
-  .xb .copyall:hover{border-color:var(--anchor)}
-  .xb .empty{border:1px dashed var(--hair);border-radius:14px;padding:48px 28px;text-align:center;color:var(--tx-dim)}
-  .xb .empty .big{font-size:30px;margin-bottom:12px;opacity:.5}
-  .xb .empty p{font-size:13px;line-height:1.7;max-width:380px;margin:0 auto;color:var(--tx-mut)}
-  .xb .spine{position:relative;padding-left:42px}
-  .xb .spine::before{content:"";position:absolute;left:14px;top:6px;bottom:34px;width:2px;background:var(--hair)}
-  .xb .node{position:relative;margin-bottom:18px}
-  .xb .node::before{content:"";position:absolute;left:-34px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--live);border:2px solid var(--live);z-index:2}
-  .xb .nhead{display:flex;align-items:baseline;gap:10px;margin-bottom:9px}
-  .xb .nno{font-family:var(--font-mono);font-size:11px;color:var(--tx-dim);font-weight:700}
-  .xb .nname{font-size:14px;font-weight:800;letter-spacing:-.01em}
-  .xb .ntc{font-family:var(--font-mono);font-size:11.5px;color:var(--warm);margin-left:auto}
-  .xb .card{background:var(--panel);border:1px solid var(--hair);border-radius:12px;padding:14px 16px;position:relative}
-  .xb .line{font-size:14px;line-height:1.85;padding:3px 0;color:var(--tx)}
-  .xb .line.anchor{padding-left:20px;position:relative}
-  .xb .line.anchor::before{content:"";position:absolute;left:0;top:11px;width:8px;height:8px;border-radius:50%;background:var(--anchor)}
-  .xb .line.anchor .atag{font-family:var(--font-mono);font-size:9.5px;color:var(--anchor);font-weight:700;margin-right:5px;border:1px solid rgba(63,217,200,.35);padding:1px 4px;border-radius:4px}
-  .xb .copyone{position:absolute;top:10px;right:10px;font-size:10.5px;color:var(--tx-mut);background:var(--raised);border:1px solid var(--hair);padding:3px 8px;border-radius:6px;cursor:pointer;opacity:0;transition:.14s}
-  .xb .card:hover .copyone{opacity:1}
-  .xb .copyone:hover{color:var(--anchor);border-color:var(--anchor)}
-  .xb .loop{position:relative;margin-top:4px;font-family:var(--font-mono);font-size:11.5px;color:var(--anchor);display:flex;align-items:center;gap:8px;font-weight:700}
-  .xb .loop::before{content:"↻";position:absolute;left:-34px;top:-2px;font-size:18px;color:var(--anchor)}
-  .xb .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--anchor);color:#0a1614;font-size:13px;font-weight:700;padding:10px 18px;border-radius:10px;z-index:50}
-  .xb .faq{margin-top:24px;border-top:1px solid var(--hair);padding-top:18px}
-  .xb .faqhead{font-size:13px;font-weight:700;color:var(--tx);margin-bottom:12px;display:flex;align-items:center;gap:8px}
-  .xb .faqhead .n{font-family:var(--font-mono);font-size:10px;color:var(--tx-dim)}
-  .xb .qa{background:var(--panel);border:1px solid var(--hair);border-radius:10px;padding:11px 14px;margin-bottom:8px}
-  .xb .q{font-size:12.5px;color:var(--warm);font-weight:700;margin-bottom:5px}
-  .xb .a{font-size:13px;color:var(--tx);line-height:1.7}
-  @media(prefers-reduced-motion:reduce){.xb *{animation:none!important;transition:none!important}}
-  /* ---- 静态版补充样式：产品信息单行输入框 ---- */
-  .xb input.ipt{width:100%;background:var(--raised);border:1px solid var(--hair);color:var(--tx);border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit}
-  .xb input.ipt:focus{outline:2px solid var(--anchor);outline-offset:1px;border-color:transparent}
-  .xb input.ipt::placeholder{color:var(--tx-dim)}
-  .xb .product{margin-bottom:18px;border:1px solid var(--hair);border-radius:10px;padding:14px;background:rgba(63,217,200,.04)}
-  .xb .product summary{font-size:12.5px;font-weight:700;color:var(--anchor);cursor:pointer;list-style:none}
-  .xb .product summary::-webkit-details-marker{display:none}
-  .xb .product:not([open]) summary::before{content:"▸ 产品信息"}
-  .xb .product[open] summary::before{content:"▾ 产品信息"}
-  .xb .product .pfld{margin-top:11px}
-  .xb .product .pfld label{display:block;font-size:11px;color:var(--tx-mut);margin-bottom:5px;font-family:var(--font-mono)}
-  .xb .stylecard{display:flex;flex-direction:column;gap:6px;width:100%;text-align:left;padding:9px 12px;border-radius:8px;border:1px solid var(--hair);background:var(--raised);color:var(--tx-mut);cursor:pointer;margin-bottom:7px}
-  .xb .stylecard:hover{border-color:#3d4351}
-  .xb .stylecard.on{border-color:var(--live);background:rgba(255,82,71,.08)}
-  .xb .stylecard .st{font-size:12.5px;font-weight:700;color:var(--tx)}
-  .xb .stylecard.on .st{color:var(--live)}
-  .xb .stylecard .sd{font-size:11px;color:var(--tx-mut);font-family:var(--font-mono)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--ink);color:var(--tx);font-family:var(--font-sans);-webkit-font-smoothing:antialiased;line-height:1.5}
+  .wrap{max-width:1180px;margin:0 auto;padding:22px 20px 80px}
+  .top{display:flex;align-items:center;gap:14px;padding-bottom:18px;border-bottom:1px solid var(--hair);margin-bottom:22px;flex-wrap:wrap}
+  .livedot{width:10px;height:10px;border-radius:50%;background:var(--live);animation:pulse 1.8s infinite;flex:none}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,82,71,.5)}70%{box-shadow:0 0 0 9px rgba(255,82,71,0)}100%{box-shadow:0 0 0 0 rgba(255,82,71,0)}}
+  .title{font-size:19px;font-weight:800;letter-spacing:-.01em}
+  .title b{color:var(--live)}
+  .sub{font-size:12.5px;color:var(--tx-mut);font-family:var(--font-mono);letter-spacing:.02em}
+  .tag{margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--anchor);border:1px solid var(--hair);padding:4px 9px;border-radius:20px}
+  .grid{display:grid;grid-template-columns:360px 1fr;gap:26px;align-items:start}
+  @media(max-width:860px){.grid{grid-template-columns:1fr;gap:20px}}
+  .panel{background:var(--panel);border:1px solid var(--hair);border-radius:14px;padding:20px;position:sticky;top:16px}
+  @media(max-width:860px){.panel{position:static}}
+  .fld{margin-bottom:18px}.fld:last-child{margin-bottom:0}
+  .lbl{display:block;font-size:12px;font-weight:700;color:var(--tx);margin-bottom:9px}
+  .lbl .hint{font-weight:400;color:var(--tx-dim);font-size:11px;margin-left:6px;font-family:var(--font-mono)}
+  .pills{display:flex;flex-wrap:wrap;gap:7px}
+  .pill{font-size:12.5px;padding:7px 12px;border-radius:8px;border:1px solid var(--hair);background:var(--raised);color:var(--tx-mut);cursor:pointer;transition:.14s;user-select:none}
+  .pill:hover{border-color:#3d4351;color:var(--tx)}
+  .pill.on{background:var(--live);border-color:var(--live);color:#fff;font-weight:600}
+  textarea,input.ipt{width:100%;background:var(--raised);border:1px solid var(--hair);color:var(--tx);border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit}
+  textarea:focus,input.ipt:focus{outline:2px solid var(--anchor);outline-offset:1px;border-color:transparent}
+  textarea{resize:vertical;min-height:54px;line-height:1.5}
+  textarea::placeholder,input.ipt::placeholder{color:var(--tx-dim)}
+  .btns{display:flex;gap:8px;margin-top:4px}
+  .go{flex:1;padding:13px;border:none;border-radius:10px;background:var(--live);color:#fff;font-size:14.5px;font-weight:800;cursor:pointer;transition:.14s;display:flex;align-items:center;justify-content:center;gap:8px}
+  .go:hover:not(:disabled){filter:brightness(1.08)}
+  .go:disabled{background:var(--raised);color:var(--tx-dim);cursor:not-allowed}
+  .spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .redlines,.constraint{margin-top:18px;border-top:1px solid var(--hair);padding-top:14px}
+  .redlines summary,.constraint summary{font-size:11.5px;font-weight:700;color:var(--tx-mut);cursor:pointer;list-style:none;font-family:var(--font-mono)}
+  .redlines summary::-webkit-details-marker,.constraint summary::-webkit-details-marker{display:none}
+  .redlines summary::before{content:"▸ ";color:var(--anchor)}
+  .redlines[open] summary::before{content:"▾ "}
+  .constraint summary::before{content:"▸ 风格限制（可编辑）";color:var(--anchor)}
+  .constraint[open] summary::before{content:"▾ 风格限制（可编辑）"}
+  .redlines ul{margin:11px 0 0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:7px}
+  .redlines li{font-size:11.5px;color:var(--tx-mut);line-height:1.5;padding-left:16px;position:relative}
+  .redlines li::before{content:"";position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:1px;background:var(--live)}
+  .constraint textarea{margin-top:11px;min-height:90px;font-size:12.5px}
+  .product{margin-bottom:18px;border:1px solid var(--hair);border-radius:10px;padding:14px;background:rgba(63,217,200,.04)}
+  .product summary{font-size:12.5px;font-weight:700;color:var(--anchor);cursor:pointer;list-style:none}
+  .product summary::-webkit-details-marker{display:none}
+  .product:not([open]) summary::before{content:"▸ 产品信息"}
+  .product[open] summary::before{content:"▾ 产品信息"}
+  .product .pfld{margin-top:11px}
+  .product .pfld label{display:block;font-size:11px;color:var(--tx-mut);margin-bottom:5px;font-family:var(--font-mono)}
+  .stylecard{display:flex;flex-direction:column;gap:6px;width:100%;text-align:left;padding:9px 12px;border-radius:8px;border:1px solid var(--hair);background:var(--raised);color:var(--tx-mut);cursor:pointer;margin-bottom:7px}
+  .stylecard:hover{border-color:#3d4351}
+  .stylecard.on{border-color:var(--live);background:rgba(255,82,71,.08)}
+  .stylecard .st{font-size:12.5px;font-weight:700;color:var(--tx)}
+  .stylecard.on .st{color:var(--live)}
+  .stylecard .sd{font-size:11px;color:var(--tx-mut);font-family:var(--font-mono)}
+  .out{min-height:300px}
+  .outhead{display:flex;align-items:center;gap:12px;margin-bottom:18px;min-height:34px;flex-wrap:wrap}
+  .outhead h2{font-size:14px;font-weight:700}
+  .outhead .meta{font-family:var(--font-mono);font-size:11.5px;color:var(--tx-mut)}
+  .copyall{margin-left:auto;font-size:12px;font-weight:600;color:var(--anchor);background:transparent;border:1px solid var(--hair);padding:6px 12px;border-radius:8px;cursor:pointer}
+  .copyall:hover{border-color:var(--anchor)}
+  .empty{border:1px dashed var(--hair);border-radius:14px;padding:48px 28px;text-align:center;color:var(--tx-dim)}
+  .empty .big{font-size:30px;margin-bottom:12px;opacity:.5}
+  .empty p{font-size:13px;line-height:1.7;max-width:380px;margin:0 auto;color:var(--tx-mut)}
+  .spine{position:relative;padding-left:42px}
+  .spine::before{content:"";position:absolute;left:14px;top:6px;bottom:34px;width:2px;background:var(--hair)}
+  .node{position:relative;margin-bottom:18px}
+  .node::before{content:"";position:absolute;left:-34px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--ink);border:2px solid var(--hair);z-index:2}
+  .node.done::before{border-color:var(--live);background:var(--live)}
+  .node.loading::before{border-color:var(--warm);animation:pulse2 1.4s infinite}
+  @keyframes pulse2{0%,100%{opacity:.4}50%{opacity:1}}
+  .nhead{display:flex;align-items:baseline;gap:10px;margin-bottom:9px}
+  .nno{font-family:var(--font-mono);font-size:11px;color:var(--tx-dim);font-weight:700}
+  .nname{font-size:14px;font-weight:800;letter-spacing:-.01em}
+  .ntc{font-family:var(--font-mono);font-size:11.5px;color:var(--warm);margin-left:auto}
+  .card{background:var(--panel);border:1px solid var(--hair);border-radius:12px;padding:14px 16px;position:relative}
+  .line{font-size:14px;line-height:1.85;padding:3px 0;color:var(--tx)}
+  .line.anchor{padding-left:20px;position:relative}
+  .line.anchor::before{content:"";position:absolute;left:0;top:11px;width:8px;height:8px;border-radius:50%;background:var(--anchor)}
+  .line.anchor .atag{font-family:var(--font-mono);font-size:9.5px;color:var(--anchor);font-weight:700;margin-right:5px;border:1px solid rgba(63,217,200,.35);padding:1px 4px;border-radius:4px}
+  .shimmer{height:13px;border-radius:4px;background:linear-gradient(90deg,var(--raised) 25%,#2c313c 50%,var(--raised) 75%);background-size:200% 100%;animation:sh 1.3s infinite;margin:9px 0}
+  @keyframes sh{to{background-position:-200% 0}}
+  .copyone{position:absolute;top:10px;right:10px;font-size:10.5px;color:var(--tx-mut);background:var(--raised);border:1px solid var(--hair);padding:3px 8px;border-radius:6px;cursor:pointer;opacity:0;transition:.14s}
+  .card:hover .copyone{opacity:1}
+  .copyone:hover{color:var(--anchor);border-color:var(--anchor)}
+  .err{color:var(--live);font-size:12.5px;line-height:1.6;word-break:break-word}
+  .retry{margin-left:8px;font-size:11px;color:var(--anchor);background:none;border:1px solid var(--hair);padding:3px 9px;border-radius:6px;cursor:pointer}
+  .loop{position:relative;margin-top:4px;font-family:var(--font-mono);font-size:11.5px;color:var(--anchor);display:flex;align-items:center;gap:8px;font-weight:700}
+  .loop::before{content:"↻";position:absolute;left:-34px;top:-2px;font-size:18px;color:var(--anchor)}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--anchor);color:#0a1614;font-size:13px;font-weight:700;padding:10px 18px;border-radius:10px;z-index:50;opacity:0;pointer-events:none;transition:.22s}
+  .toast.show{opacity:1}
+  .faq{margin-top:24px;border-top:1px solid var(--hair);padding-top:18px}
+  .faqhead{font-size:13px;font-weight:700;color:var(--tx);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .faqhead .n{font-family:var(--font-mono);font-size:10px;color:var(--tx-dim)}
+  .qa{background:var(--panel);border:1px solid var(--hair);border-radius:10px;padding:11px 14px;margin-bottom:8px}
+  .q{font-size:12.5px;color:var(--warm);font-weight:700;margin-bottom:5px}
+  .a{font-size:13px;color:var(--tx);line-height:1.7}
 </style>
 </head>
 <body>
-<div class="xb">
-  <div class="wrap">
-    <div class="top">
-      <span class="livedot"></span>
-      <div>
-        <div class="title" id="appTitle">小布2.0 <b>直播话术</b>生成器</div>
-        <div class="sub">5种风格 · 陈凯/张雪玲/王昱实战话术 + 事实焦虑框架</div>
-      </div>
-      <span class="tag">离线可用 · 无需联网</span>
+<div class="wrap">
+  <div class="top">
+    <span class="livedot"></span>
+    <div>
+      <div class="title" id="appTitle">小布2.0 <b>直播话术</b>生成器</div>
+      <div class="sub">5种风格 · 实时联网生成（DeepSeek） · 风格限制可编辑</div>
     </div>
+    <span class="tag">AI 实时生成</span>
+  </div>
 
-    <div class="grid">
-      <aside class="panel">
-        <details class="product" open>
+  <div class="grid">
+    <aside class="panel">
+      <details class="product" open>
+        <summary></summary>
+        <div class="pfld"><label>产品名称</label><input class="ipt" id="f_productName" placeholder="小布2.0"></div>
+        <div class="pfld"><label>价格</label><input class="ipt" id="f_price" placeholder="199"></div>
+        <div class="pfld"><label>规格亮点</label><input class="ipt" id="f_spec" placeholder="30天24节正课，每节60到90分钟，中间有休息"></div>
+        <div class="pfld"><label>随课赠品/配件</label><input class="ipt" id="f_bundle" placeholder="机器人、配套书"></div>
+        <div class="pfld"><label>品牌背书一句话</label><input class="ipt" id="f_brand" placeholder="核桃编程做编程起家十几年，官方直播间，营业执照带红章"></div>
+        <div class="pfld"><label>核心能力词</label><input class="ipt" id="f_coreSkill" placeholder="编程思维"></div>
+      </details>
+
+      <div class="fld">
+        <label class="lbl">主播风格</label>
+        <div id="styleCards"></div>
+        <details class="constraint" id="constraintBox" open>
           <summary></summary>
-          <div class="pfld"><label>产品名称</label><input class="ipt" id="f_productName" placeholder="小布2.0"></div>
-          <div class="pfld"><label>价格</label><input class="ipt" id="f_price" placeholder="199"></div>
-          <div class="pfld"><label>规格亮点</label><input class="ipt" id="f_spec" placeholder="30天24节正课，每节60到90分钟，中间有休息"></div>
-          <div class="pfld"><label>随课赠品/配件</label><input class="ipt" id="f_bundle" placeholder="机器人、配套书"></div>
-          <div class="pfld"><label>品牌背书一句话</label><input class="ipt" id="f_brand" placeholder="核桃编程做编程起家十几年，官方直播间，营业执照带红章"></div>
-          <div class="pfld"><label>核心能力词</label><input class="ipt" id="f_coreSkill" placeholder="编程思维"></div>
+          <textarea id="f_styleConstraint" placeholder="这个风格的写作限制，可自由编辑"></textarea>
         </details>
+      </div>
+      <div class="fld">
+        <label class="lbl">年级路由</label>
+        <div class="pills" id="trackPills"></div>
+      </div>
+      <div class="fld">
+        <label class="lbl">情绪入口</label>
+        <div class="pills" id="emoPills"></div>
+      </div>
+      <div class="fld">
+        <label class="lbl">真实库存/活动状态 <span class="hint">挂真锚点</span></label>
+        <textarea id="f_stock" placeholder="例：现货就这一批，今天下午就出物流。留空则不喊库存。"></textarea>
+      </div>
+      <div class="fld">
+        <label class="lbl">今日福利机制 <span class="hint">阶梯福利</span></label>
+        <textarea id="f_benefit" placeholder="例：拍一发八——两台机器人、两本书、200次编程实战。留空则不编具体赠品。"></textarea>
+      </div>
+      <div class="btns">
+        <button class="go" id="goBtn">生成循环话术</button>
+      </div>
+      <details class="redlines">
+        <summary>已内置合规红线（不可覆盖）</summary>
+        <ul>
+          <li>课程是产品，机器人是交付载体，讲解回到课程价值</li>
+          <li>不用「教育部/国家」等权威词，不承诺升学/保送结果</li>
+          <li>不用「限名额」，库存/福利只用你填的真实状态</li>
+          <li>产品名里「AI」与「编程」不同时出现</li>
+          <li>不展示机器人娱乐化表演，主体始终是课程与孩子的逻辑成果</li>
+          <li>全程不假设有观众互动（不等评论、不假设已成交）</li>
+        </ul>
+      </details>
+    </aside>
 
-        <div class="fld">
-          <label class="lbl">主播风格</label>
-          <div id="styleCards"></div>
+    <main class="out">
+      <div class="outhead">
+        <h2>循环话术</h2>
+        <span class="meta" id="meta"></span>
+        <button class="copyall" id="copyAllBtn" style="display:none">复制全部</button>
+      </div>
+      <div id="result">
+        <div class="empty">
+          <div class="big">⟳</div>
+          <p>先选风格（可展开"风格限制"自定义写法边界），填好年级和情绪入口，点「生成循环话术」。每段实时调用 DeepSeek 生成，遵守左侧固定红线 + 风格限制。</p>
         </div>
-        <div class="fld">
-          <label class="lbl">年级路由</label>
-          <div class="pills" id="trackPills"></div>
-        </div>
-        <div class="fld">
-          <label class="lbl">情绪入口</label>
-          <div class="pills" id="emoPills"></div>
-        </div>
-        <div class="fld">
-          <label class="lbl">真实库存/活动状态 <span class="hint">挂真锚点</span></label>
-          <textarea id="f_stock" placeholder="例：现货就这一批，今天下午就出物流。留空则不喊库存。"></textarea>
-        </div>
-        <div class="fld">
-          <label class="lbl">今日福利机制 <span class="hint">阶梯福利</span></label>
-          <textarea id="f_benefit" placeholder="例：拍一发八——两台机器人、两本书、200次编程实战。留空则不编具体赠品。"></textarea>
-        </div>
-        <div class="btns">
-          <button class="go" id="goBtn">生成循环话术</button>
-          <button class="reroll" id="rerollBtn" disabled title="换一套说法">换一换</button>
-        </div>
-        <details class="redlines">
-          <summary>已内置合规红线</summary>
-          <ul>
-            <li>课程是产品，机器人是交付载体，讲解回到课程价值</li>
-            <li>不用「教育部/国家」等权威词，不承诺升学/保送结果</li>
-            <li>不用「限名额」，库存/福利只用你填的真实状态</li>
-            <li>产品名里「AI」与「编程」不同时出现</li>
-            <li>不打包票、不承诺学会，资格闸式如实劝退</li>
-            <li>不展示机器人娱乐化表演，主体始终是课程与孩子的逻辑成果</li>
-          </ul>
-        </details>
-      </aside>
-
-      <main class="out">
-        <div class="outhead">
-          <h2>循环话术</h2>
-          <span class="meta" id="meta"></span>
-          <button class="copyall" id="copyAllBtn" style="display:none">复制全部</button>
-        </div>
-        <div id="result">
-          <div class="empty">
-            <div class="big">⟳</div>
-            <p>先选风格，填好年级和情绪入口，点「生成循环话术」。每句措辞来自三场实战逐字稿验证过的句子，<span style="color:var(--anchor)">青色脉冲点</span>是核心信息锚点。</p>
-          </div>
-        </div>
-      </main>
-    </div>
+      </div>
+    </main>
   </div>
 </div>
 <div class="toast" id="toast"></div>
 
 <script>
-// ============================================================
-// 以下数据与生成逻辑，与 Claude 中的 React 版本完全一致
-// ============================================================
 const TRACKS = [
-  {k:"low", t:"大班-2年级·图形化", range:"大班到二年级", route:"扣1",
-    weeks:["第一周建兴趣，拖拽图形块，孩子看见机器人动了，从玩进学",
-           "第二周编程入门，认识指令积木，学顺序、条件、循环",
-           "第三周AI入门，训练对话——问天气、问时间、背乘法口诀",
-           "第四周机器人进阶，加入巡视车"],
-    mixLine:"大班到二年级走图形化线，从拖拽搭积木入门，循序渐进学顺序、条件、循环"},
-  {k:"high", t:"3-6年级·Python", range:"三到六年级", route:"扣2",
-    weeks:["第一周跑出人生第一段程序，代码控制机器人，先建成就感",
-           "第二周用代码写指令",
-           "第三周理解AI的回应逻辑——为什么问它天气它能答，底层逻辑搞清楚",
-           "第四周巡线、避障、语音，完成项目作品"],
-    mixLine:"三到六年级直接上Python，写代码控制机器人，从第一段程序到完成项目作品"},
-  {k:"mix", t:"混合年级", range:"大班到六年级", route:"按年级", weeks:[], mixLine:""}
+  {k:"low", t:"大班-2年级·图形化"},
+  {k:"high", t:"3-6年级·Python"},
+  {k:"mix", t:"混合年级"}
 ];
-
 const EMOS = [
-  {k:"era", t:"升学焦虑(升维版)",
-    open:["2025年开始人工智能已经进校园了，北上广深、浙江的孩子在学校里已经开始学AI了。咱不是要孩子当程序员——是别让孩子在下一轮里掉队。",
-          "现在不少城市的学校已经把AI编程编进日常课表了，咱不是要孩子当程序员——是不想让他在同龄人里慢这一步。"],
-    urgency:["咱不贩卖焦虑，但有个事实摆在这儿：身边已经有孩子在学这个了，你家孩子早一步还是晚一步，差的不是一星半点。",
-             "这种差距是悄悄拉开的，不是哪天突然显出来——身边已经动手的家庭不少了，差的就是这几个月的提前量。"]},
-  {k:"literacy", t:"素养vs应试",
-    open:["语数英是应试教育，编程是素养教育——未来走的是素养这条路。",
-          "刷题刷的是应试的本事，编程练的是素养的底子——这两条路，将来吃香的是后一条。"],
-    urgency:["刷题练的是记忆力，编程练的是另一套逻辑。这两年走这条路的家庭已经不少，起步早的孩子现在已经能看出差距了。",
-             "补习班一年刷下来成绩没怎么动，因为练的不是逻辑——这条路走对了，差距是这一两年就能看出来的。"]},
-  {k:"talent", t:"科技特长生",
-    open:["科技特长生是小升初的硬通道——这是实打实的升学优势，不是兴趣班加分。",
-          "想给孩子多备一条升学路的，科技特长生这条赛道现在认可度一年比一年高。"],
-    urgency:["科技特长生这条赛道一年比一年卷，窗口期就在小学这几年，你家孩子开始了吗？",
-             "等别人家孩子已经拿着作品去打比赛，你才想起步，那时候窗口期基本就关了。"]},
-  {k:"hands", t:"动手成就感",
-    open:["现在能坐住、肯动手钻研一件事的孩子不多——这正是越早培养越占便宜的能力。",
-          "很多孩子对着课本提不起劲，但一让他动手做出点东西，眼睛立马就亮了——这种劲儿值得早点培养。"],
-    urgency:["这种坐得住、肯钻研的劲儿，是越早练越占便宜，大了反而养不出来，别等。",
-             "动手做出成果的成就感，是越小的时候越容易养成的习惯，等孩子大了再补就费劲多了。"]}
+  {k:"era", t:"升学焦虑(升维版)"},
+  {k:"literacy", t:"素养vs应试"},
+  {k:"talent", t:"科技特长生"},
+  {k:"hands", t:"动手成就感"}
 ];
-
-function pick(arr, n){ return arr[((n%arr.length)+arr.length)%arr.length]; }
-const A = t => ({anchor:true, text:t});
-const L = t => ({anchor:false, text:t});
-function coreAnchor(benefit, price, bundle){
-  return benefit
-    ? `${price}一价全含：24节正课、${bundle}，今天还有${benefit}——没有任何二次消费、没有任何犹豫成本。`
-    : `${price}一价全含——24节正课、${bundle}，没有任何二次消费、没有任何犹豫成本。`;
-}
-
-// ============ 5 套风格：各自的阶段表 + 内容生成器 ============
-
 const STYLES = [
   {k:"doc3", t:"事实焦虑风格", d:"十段式·事实紧迫感"},
   {k:"chenkai", t:"陈凯风格", d:"交易闭单·十问十答"},
@@ -261,7 +210,6 @@ const STYLES = [
   {k:"wangyu", t:"王昱风格", d:"教学路由·资格闸"},
   {k:"fusion", t:"融合风格", d:"三人骨架合并"}
 ];
-
 const PHASES_BY_STYLE = {
   doc3: [
     {id:"p1",no:"01",name:"焦虑开场·留人",tc:"0:00–1:00"},
@@ -305,268 +253,14 @@ const PHASES_BY_STYLE = {
     {id:"f6",no:"05",name:"成交接球·关注",tc:"~20s/单"}
   ]
 };
+const DEFAULT_STYLE_CONSTRAINTS = {
+  doc3: "语气：用客观事实和趋势制造紧迫感，不是情绪轰炸式焦虑；语气克制、冷静、像在摆事实讲道理，不要哭喊式渲染、不要堆砌感叹号式煽情。\n结构顺序：严格按十段递进——焦虑开场→事实紧迫感→痛点共鸣→主播自爆（必须是态度转折的桥梁，先怀疑后认可，不能脱离上下文单独出现）→场景铺垫→价值峰值→课程价值→价格锚点→不买代价→终值收尾。价格和信任信息必须在'不买的代价'那段之前就讲完，不能拖到最后才补。每段控制在5~8句。\n内容边界：制造紧迫感只能用两种来源——泛化的趋势性表述（比如'身边已经有家庭在动手了'），或者真实库存/福利里填的真实信息；绝对不能编造具体统计数字、政策条文、机构名称；硬件不能做成才艺表演，只能以'代码执行结果'出现。",
+  chenkai: "强转化、语速感强、直给不绕弯；先把价值和信任讲完才能进促单段；促单必须搭配'不让盲目拍'式刹车句，不能只逼单不给退路；不堆砌十问十答式罗列，异议照应简短带过即可。",
+  zhang: "整体语气柔和、像在跟朋友聊天，少用强push命令句；促单前必须先把信任和一价全含说清楚；可以用服务降级稀缺制造紧迫感，但不夸大、不威胁式催促。",
+  wangyu: "教学式、耐心讲解，促单语气要软，允许直接说'不合适不用拍'；必须包含按年级分层讲解的逻辑；信任段要包含明确的预期管理（说清楚这套能做到什么、不能做到什么）。",
+  fusion: "综合三种风格优点：开场留人快、价值讲解扎实、信任段诚实、促单段配刹车句、结尾干净；每段比单一风格略短，节奏紧凑；同一卖点不重复超过2次。"
+};
 
-function buildPhase(styleK, id, p, seed){
-  const tr = TRACKS.find(x=>x.k===p.trackK) || TRACKS[0];
-  const e = EMOS.find(x=>x.k===p.emotionK) || EMOS[0];
-  const benefit = (p.benefit||"").trim();
-  const stock = (p.stock||"").trim();
-  const productName = (p.productName||"").trim() || "小布2.0";
-  const price = (p.price||"").trim() || "199";
-  const spec = (p.spec||"").trim() || "30天24节正课，每节60到90分钟，中间有休息";
-  const bundle = (p.bundle||"").trim() || "机器人、配套书";
-  const brand = (p.brand||"").trim() || "核桃编程做编程起家十几年，官方直播间，营业执照带红章";
-  const coreSkill = (p.coreSkill||"").trim() || "编程思维";
-  const isMix = tr.k==="mix";
-  const valueBlock = isMix
-    ? [L(TRACKS[0].mixLine+"；"+TRACKS[1].mixLine+"。"),
-       L("对应孩子的年级我们各有一条路径，不会让大的学小的内容、小的啃不动大的内容。"),
-       L("不管您家是哪个年级，从今天开始跟着课表走，一周一个台阶，不用您操心怎么安排。")]
-    : [L(`咱们学${tr.t.split("·")[1]}，四周给您讲清楚，一周一个台阶，不是堆功能：`),
-       ...tr.weeks.map(w=>L("　"+w)),
-       L(`四周走完，孩子手上有作品、嘴上能讲出来怎么做的——不是听完就忘的那种课。`)];
-
-  // ---------- 事实焦虑风格 ----------
-  if(styleK==="doc3"){
-    if(id==="p1") return [
-      L(`所有刚进直播间的家长先别划走，咱直播间今天就解决一件事：${isMix?"大班到六年级":tr.range}的孩子，编程和AI的入门这一步，今天给他做了。`),
-      L(`不是让孩子去考级、去当程序员——是给孩子的逻辑思维打个底，越早打越占便宜。`),
-      L(`${isMix?"大班到六年级":tr.range}的家长都听好了${isMix?"，把年级打在评论区，我马上按年级给您讲":"——把年级打在评论区，扣1或扣2，我按年级给您讲怎么学、学完孩子能拿到什么"}。`),
-      L(pick(e.open, seed)),
-      L(`为什么今天非要说这个？身边已经有家长在让孩子学这个了，你不一定觉得急，但这件事是悄悄拉开差距的。`),
-      A(`${productName}，${price}块，${spec}，外加${bundle}，给孩子打${coreSkill}的底子。`),
-      L(`先别走，我接下来把这${price}到底买什么、孩子能拿到什么，一条条给您说清楚。`)
-    ];
-    if(id==="p2") return [
-      L(pick(e.urgency, seed)),
-      L(`但今天这个直播间，不卖焦虑，我卖的是一个解决方案——一套整整一个月的${coreSkill}训练方案。`),
-      L(`不是教孩子用AI工具——市面上教孩子聊天的AI工具一大堆，那不叫竞争力，因为人人都会用。`),
-      L(`会写代码、有${coreSkill}，才是真正的竞争力——这才是少数人能拿到的东西。`),
-      L(`你不需要孩子将来当程序员，但你得让他有这个底层能力，将来不管走哪条路，这个能力都用得上。`),
-      A(`${price}块，买的不是一台机器人，是孩子早一步打下的这个底子。`)
-    ];
-    if(id==="p3"){
-      const cases = [
-        "看到别人家孩子在学，自己却不知道该不该跟、该学什么的——市面上AI工具、学习机一大堆，你分不清哪个真有用；",
-        "教育投入不少，但孩子数理化还是上不去的——补习班刷了一年题成绩没变，因为练的是记忆力，不是逻辑思维；",
-        "想布局科技特长生，但找不到靠谱路径的——本地编程班要么贵、要么拖几年不打比赛，你一直没下手。"
-      ];
-      const order = [0,1,2].map(i=>cases[(i+seed)%3]);
-      const labels = ["第一种：","第二种：","第三种："];
-      return [
-        L(`我知道在座的家长，关于孩子学编程这件事，多半正经历这几种情况：`),
-        ...order.map((c,i)=>L(labels[i]+c)),
-        L(`你是不是也这样：道理都懂，但一直没找到一个性价比合适、能马上开始的方式？`),
-        A(`如果你是这几种里的任何一种，今天这${price}的课，就是给你这个答案。`),
-        L(`咱不绕弯子，下面我直接把这套课怎么解决这几个问题，讲给你看。`)
-      ];
-    }
-    if(id==="p4") return [
-      L(`说实话——我第一次看到这个产品时也想，又一台编程机器人，能有什么不一样。`),
-      L(`我家孩子拿到那天，我压根没管，我在厨房做饭。`),
-      L(`结果过了一会儿，他自己跑过来跟我说："你看，它听我的话了。"`),
-      L(`我当时愣了一下——因为以前买的那些学习机、AI工具，都是我陪着他用，他自己从来没主动搞过。`),
-      L(`那个瞬间我才明白，这东西跟那些AI工具不一样——他是在自己写代码让机器人动，不是在被动刷题、被动聊天。`),
-      L(`所以今天我不是来念卖点的，我就把我家真实发生的事，跟你们说说。`),
-      A(`这不是又一个机器人玩具，是孩子自己证明了"我懂逻辑、我能让它听我的"。`)
-    ];
-    if(id==="p5") return [
-      L(`往下讲之前，先说清楚一件事：现在AI工具一大堆，孩子打开就能跟AI聊天、让AI帮忙写作业——但那只是"会用工具"，不是"有${coreSkill}"。`),
-      L(`孩子还是在被动接受，他没有在思考、没有在拆解问题。`),
-      L(`咱这套不一样：孩子打开课程，自己跟着学，自己写出第一行代码。`),
-      L(`代码写对了，机器人就动；代码写错了，机器人就不动——这个反馈是即时的，孩子不用等老师批作业，机器人的反应直接告诉他：你学会了没有。`),
-      L(`你想想这个过程孩子在练什么？拆解问题、写指令、验证结果、发现错误、调整再试——这就是${coreSkill}。`),
-      A(`程序是孩子自己写的——不是买个玩具回家，你随便买个机器人都能语音聊天，咱这个的核心逻辑是先跟着课学，学完孩子自己编程操控它，不然跟某度某米机器人没区别。`)
-    ];
-    if(id==="p6") return [...valueBlock,
-      L(`一句话总结：从会用编程，到能使用编程、能操控编程、能制作编程——质的飞跃。`),
-      A(`规格给您说死：${spec}；动画引入、剧情连线、答题、互动PK，寓教于乐，孩子坐得住。`),
-      L(`这不是干坐着听课的那种枯燥课，是边玩边学、边学边练出来的。`)
-    ];
-    if(id==="p7") return [
-      L(`这套课和市面上的区别就一句话：别的只教孩子跟AI对话，咱教孩子用代码操控AI——练的是${coreSkill}，是理解AI底层逻辑的能力。`),
-      L(`这套思维有什么用？我说两个最实际的：`),
-      L(`第一，编程练的就是发现问题和解决问题的能力，拆解问题、找规律、验证答案，这个逻辑路径跟数学解题、语文行文逻辑是一个底子。`),
-      L(`第二，科技特长生这条升学通道，核心考的就是编程。这条路一年比一年卷，早一步打基础，多一条路，还能赶在前面。`),
-      A(`学完您能看见的是什么？孩子能驾驭一个复杂的工具，做出让你惊艳的项目，还能把做的过程自信地讲给你听。`),
-      L(`这才是${price}真正买到的东西——不是一台会动的机器人，是孩子身上多出来的这套能力。`)
-    ];
-    if(id==="p8") return [
-      L(`说价格。线下随便给孩子报个编程班，一两节课就100多，学编程本来就是在电脑上写代码——线上线下学的是同一个东西。`),
-      L(`咱这24节才${price}，您自己算算这笔账，一节课均下来才几块钱。`),
-      A(coreAnchor(benefit, price, bundle)),
-      L(`丑话说前面：这套是入门。孩子学完要打比赛、走科技特长长线，那是后面的规划，这${price}不含——但做入门、打地基，它绝对够。`),
-      L(`说实话，谁也没法打包票孩子一定怎么样——所以让他试出来：三节正课免费试，试完不满意全额退，您一分钱风险都不担。`),
-      L(`不用您辅导：一对一辅导老师，上课听不懂、下课有疑惑，全程解答，您不用懂编程也能放心买。`)
-    ];
-    if(id==="p9"){
-      const ls=[L(`我知道你现在在犹豫，在想再看看、回去商量一下。`)];
-      ls.push(L(`但有件事是真的：${pick(e.urgency, seed)}`));
-      ls.push(L(`你不是在等一个更好的时机，这种打底子的事，越早开始越占便宜，越拖优势越小。`));
-      if(stock) ls.push(L(`库存说实话：${stock}。`));
-      if(benefit) ls.push(L(`今天的福利机制是${benefit}，这个力度只在今天这一波里，过了就降级了。`));
-      else ls.push(L(`今天这个价格和这套配置，过了今天这一波就要恢复原来的力度了。`));
-      ls.push(A(`${price}一价全含，今天这一波过了，福利机制就降级——该拍的别等。`));
-      ls.push(L(`但是妈妈，我不让您盲目拍：拍回去先试，三节正课试完、机器人上手玩完，不满意全额退，运费险都给您买好。`));
-      return ls;
-    }
-    if(id==="p10") return [
-      L(`我最后说一句——一个月后，你家孩子跑过来跟你说"妈妈你看，这是我写的代码，它听我的话了"，那个瞬间，值不值${price}？`),
-      L(`好，最后总结一下，今天拍下来，${price}块能拿到什么：24节系统编程课、${bundle}，加上孩子身上多出来的这套${coreSkill}。`),
-      L(`您家孩子几年级就拍几年级——不要高拍、不要低拍、不要错拍、不要漏拍。`),
-      A(`拍下后给您备注上名额和全套礼赠，订单走正常流程，不用您额外操心。`),
-      A(`拍完记得点个关注，别错过后续上课提醒和福利更新。`),
-      L(`新进来的家长一样，年级路由的讲法我马上从头再过一遍。`)
-    ];
-  }
-
-  // ---------- 陈凯风格 ----------
-  if(styleK==="chenkai"){
-    if(id==="c1") return [
-      L(`新进来的家长别划走，先听我说一句——今天这个价格不是一直有的。`),
-      benefit ? A(`今天专场：课、${bundle}，还有${benefit}，全在${price}里。`) : A(`${price}一价，课加${bundle}，全在里面。`),
-      L(`咱${brand}，您放心看。`),
-      L(`您家孩子几年级，打在评论区，我马上按年级给您讲怎么学、学完能拿到什么。`),
-      L(`大班到六年级都覆盖，不管您家孩子哪个年级，都有对应的路子，别走开。`)
-    ];
-    if(id==="c2") return [...valueBlock,
-      A(`规格给您说死：${spec}；动画引入、剧情连线、答题、互动PK，寓教于乐，孩子坐得住。`),
-      L(`这不是发个机器人您自己琢磨，是一节节带着孩子往下走的完整课程体系。`),
-      L(`课程是分层的，不是一锅炖，年级不同走的内容不同，学起来才不费劲。`)];
-    if(id==="c4"){
-      const ls=[L(`您是${isMix?"大班到六年级":tr.range}对吧？那就照我刚讲的这条路径走，今天定下来最合适。`)];
-      ls.push(L(`您家孩子学这套，不耽误别的事，每天抽出一节课的时间就够。`));
-      if(benefit) ls.push(A(`今天的福利是${benefit}，这个机制只有今天，过了就是另一个力度了。`));
-      else ls.push(A(`今天这个价格力度，过了今天就要恢复原来的价格了。`));
-      if(stock) ls.push(L(`库存说实话：${stock}。`));
-      ls.push(L(`但妈妈，我不让您盲目拍：拍回去先试，三节正课试完不满意全额退，运费险都买好了。`));
-      ls.push(L(`您家孩子几年级就拍几年级——不要高拍、不要低拍、不要错拍、不要漏拍。`));
-      ls.push(L(`犹豫的家长别等了，今天这个机制过了就没了，该定的现在定。`));
-      return ls;
-    }
-    if(id==="c5") return [
-      L(`妈妈您可能第一次刷到我们——三件事记住。`),
-      L(`第一，${brand}，您看屏幕上展示的就是。`),
-      L(stock ? `第二，现货说实话：${stock}。` : `第二，物流这块您放心，正常下单都能按时安排发出。`),
-      A(coreAnchor(benefit, price, bundle)),
-      L(`这三条记住了，您就知道这不是哪个临时小账号在忽悠您。`)
-    ];
-    if(id==="c6") return [
-      L(`决定好的家长，直接拍下，下单后给您备注上名额和全套礼赠。`),
-      L(`订单走的是正常流程，时效内安排发出，不用您额外操心。`),
-      A(`拍完记得点个关注，后续上课提醒、福利更新都不错过。`),
-      L(`新进来的家长一样，年级路由的讲法我马上从头再过一遍。`)
-    ];
-  }
-
-  // ---------- 张雪玲风格 ----------
-  if(styleK==="zhang"){
-    if(id==="z1") return [
-      L(pick(e.open, seed)),
-      L(`我知道这话有点扎心，但我必须跟您说——这不是要吓唬您，是想让您早一步给孩子做准备。`),
-      L(`您家孩子${isMix?"大班到六年级":tr.range}，跟着我接下来讲的这条路径走就对了。`),
-      L(`今天这个直播间，我想做的事很简单：用${price}块钱，给孩子搭一个不掉队的底子。`)
-    ];
-    if(id==="z2") return [
-      A(`一句话总结这套课让孩子拿到什么：从会用编程，到能使用编程、能操控编程、能制作编程——质的飞跃。`),
-      ...(isMix ? valueBlock : [L(`简单说：${tr.weeks[0]}，一步步往下，到第四周${tr.weeks[3]}。`),
-                                 L(`这是一条看得见进度的路，不是孩子学完自己都说不清学了什么的那种课。`)]),
-      L(`这套课最打动我的地方，就是这条从"会用"到"能制作"的进阶路径——每一步孩子都能感觉到自己在变厉害。`)
-    ];
-    if(id==="z3") return [
-      L(`我不是来催您的，但有些事我提前说清楚。`),
-      L(`孩子能学会吗？说实话谁也没法打包票，所以让他试出来——三节正课免费试，不满意全额退。`),
-      L(`顾虑我都提前说清楚，不藏着，您听完心里有数再决定。`)
-    ];
-    if(id==="z4"){
-      const ls=[A(`我不让大家盲目拍：试完不满意，全额退，运费险都给您买好了。`)];
-      if(benefit) ls.push(L(`今天的配置是${benefit}，这个力度只在今天这一波里，过了就要降级了。`));
-      else ls.push(L(`今天这个配置力度，过了今天就要降级了。`));
-      if(stock) ls.push(L(`库存说实话：${stock}。`));
-      ls.push(L(`我不是逼您现在就拍，是想告诉您，今天这个机制确实只有今天，您自己判断要不要等。`));
-      return ls;
-    }
-    if(id==="z5") return [
-      A(`${price}一价全含：没有任何二次消费、隐形消费，没有任何犹豫成本。`),
-      L(`这是三人里最干净的一条——一价拍下，剩下的事您不用再操心，不会买回去发现还要继续花钱。`),
-      L(`您今天花的${price}，就是您最终要花的${price}，没有后面那些隐形消费。`)
-    ];
-  }
-
-  // ---------- 王昱风格 ----------
-  if(styleK==="wangyu"){
-    if(id==="w1") return [
-      L(isMix
-        ? `所有家长听好：您家孩子现在几年级，大班到六年级都打在评论区，我按年级给您讲怎么学、学完孩子能拿到什么。`
-        : `所有家长听好：大班到二年级的扣1，三到六年级的扣2，我按年级给您讲怎么学、学完孩子能拿到什么。`),
-      L(`不打年级我没法给您讲对应的内容，因为这套课是分层的，年级不同学的东西真不一样。`),
-      L(`大班到六年级，不管您家孩子是哪个年级，我接下来都会讲到，不会落下谁。`)
-    ];
-    if(id==="w2") return [...valueBlock,
-      A(`按周给到里程碑，不是泛泛讲——每一步孩子学到什么，咱说得清楚，不是一笔糊涂账。`),
-      L(`这个课程的主轴就是按周往下走，孩子每周都有明确的小目标，学完自己就能感受到进步。`)];
-    if(id==="w3") return [
-      L(`跟您说句实在话，丑话说前面：这套是入门课。`),
-      A(`孩子学完要打比赛、走科技特长长线，那是后面的规划，这${price}不含——但做入门、打地基，它绝对够。`),
-      L(`您要是奔着打比赛来的，今天这个不是终点，是起点，先把地基打扎实，后面咱再聊进阶路线。`),
-      L(`我不夸大这套课能干什么，能干什么我说清楚，不能干什么我也提前告诉您，这样您买得放心，孩子学得不会有落差。`)
-    ];
-    if(id==="w4") return [
-      L(`想知道这机器人为什么能听懂孩子说话？因为程序是孩子自己写的。`),
-      A(`不是买个玩具回家——你随便买个机器人都能语音聊天，咱这个的核心逻辑是先跟着课学，学完孩子自己编程操控它，不然跟某度某米机器人没区别。`),
-      L(`这是这套课跟市面上其他东西最大的不同：别人卖的是机器人功能，咱卖的是孩子自己写代码的这个能力。`)
-    ];
-    if(id==="w5"){
-      const ls=[];
-      if(stock) ls.push(L(`库存说实话：${stock}。`));
-      if(benefit) ls.push(A(`今天的福利是${benefit}。`));
-      else ls.push(A(coreAnchor(benefit, price, bundle)));
-      ls.push(L(`有需要的话，直接拍；不合适的，我刚才也说了，不用勉强。`));
-      ls.push(L(`我不会硬推您拍，您是真觉得孩子合适、真想让孩子学，再拍也不迟。`));
-      return ls;
-    }
-    if(id==="w6") return [
-      A(`拍完记得点个关注，别错过后续上课提醒和福利更新。`),
-      L(`新进来的家长一样，年级路由的讲法我马上从头再过一遍。`)
-    ];
-  }
-
-  // ---------- 融合风格 ----------
-  if(styleK==="fusion"){
-    if(id==="f1") return [
-      L(isMix
-        ? `您家孩子现在几年级？大班到六年级都打在评论区，我按年级给您讲。`
-        : `您家孩子现在几年级？大班到二年级帮我扣1，三到六年级扣2，我按年级给您讲怎么学。`),
-      L(pick(e.open, seed)),
-      A(`${productName}，${price}块，${spec}，外加${bundle}，核心是课程，硬件是孩子上课实操的工具。`),
-      L(`先别急着划走，下面把这${price}到底买什么、孩子能拿到什么，一条条讲清楚。`)
-    ];
-    if(id==="f2") return [...valueBlock,
-      L(`一句话总结：从会用编程，到能使用编程、能操控编程、能制作编程——质的飞跃。`),
-      A(`规格给您说死：${spec}，孩子坐得住。`)];
-    if(id==="f4") return [
-      L(`${brand}。`),
-      A(coreAnchor(benefit, price, bundle)),
-      L(`丑话说前面：这套是入门，打比赛走特长长线是后面的规划，这${price}不含——但打地基，它绝对够。`),
-      L(`不用您辅导，一对一老师全程解答，您不懂编程也能放心买。`)
-    ];
-    if(id==="f5"){
-      const ls=[];
-      if(benefit) ls.push(L(`今天的福利：${benefit}，这个机制只有今天，过了就降级。`));
-      if(stock) ls.push(L(`库存说实话：${stock}。`));
-      ls.push(A(`${price}一价全含，该拍的别等。`));
-      ls.push(L(`您家孩子几年级就拍几年级——不要高拍、不要低拍、不要错拍、不要漏拍。`));
-      ls.push(L(`但是妈妈，我不让您盲目拍：拍回去先试，不满意全额退，运费险都买好了。`));
-      return ls;
-    }
-    if(id==="f6") return [
-      L(`拍下后给您备注上名额和全套礼赠，订单走正常流程，不用您额外操心。`),
-      A(`拍完记得点个关注，别错过后续上课提醒和福利更新。`),
-      L(`新进来的家长一样，年级路由的讲法我马上从头再过一遍。`)
-    ];
-  }
-  return [];
-}
 function getFAQ(price){
   return [
     {q:"孩子能学会吗？", a:"说实话，谁也没法打包票——所以让他试出来：三节正课免费试，试完不满意全额退。"},
@@ -582,30 +276,51 @@ function getFAQ(price){
   ];
 }
 
-// ============================================================
-// 静态渲染层（原生 JS，替代 React，逻辑保持一致）
-// ============================================================
+function parseLines(text){
+  return text.split("\n").map(l=>l.trim()).filter(Boolean)
+    .map(l=>l.replace(/^[\-\*•\d]+[\.\、\)]\s*/,""))
+    .map(l=>({anchor:/^\[锚\]/.test(l), text:l.replace(/^\[锚\]\s*/,"")}));
+}
+function esc(s){ return s.replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+
 const state = {
-  styleK: "doc3", trackK: "low", emotionK: "era",
-  stock: "", benefit: "",
-  productName: "", price: "", spec: "", bundle: "", brand: "", coreSkill: "",
-  seed: null
+  styleK:"doc3", trackK:"low", emotionK:"era",
+  stock:"", benefit:"",
+  productName:"", price:"", spec:"", bundle:"", brand:"", coreSkill:"",
+  styleConstraints:{},
+  store:{},
+  running:false
 };
+STYLES.forEach(s=> state.styleConstraints[s.k] = DEFAULT_STYLE_CONSTRAINTS[s.k]);
 
 function params(){
   return {
-    trackK: state.trackK, emotionK: state.emotionK,
-    stock: state.stock, benefit: state.benefit,
-    productName: state.productName, price: state.price, spec: state.spec,
-    bundle: state.bundle, brand: state.brand, coreSkill: state.coreSkill
+    trackK:state.trackK, emotionK:state.emotionK, stock:state.stock, benefit:state.benefit,
+    productName:state.productName, price:state.price, spec:state.spec,
+    bundle:state.bundle, brand:state.brand, coreSkill:state.coreSkill
   };
 }
 
-function esc(s){ return s.replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+async function callGenerate(phaseId){
+  let res;
+  try{
+    res = await fetch("/api/generate", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ styleK:state.styleK, phaseId, params:params(), styleConstraint:state.styleConstraints[state.styleK] })
+    });
+  }catch(e){ throw new Error("网络请求失败："+(e.message||"")); }
+  const raw = await res.text();
+  let data; try{ data = JSON.parse(raw); }catch(e){ throw new Error("返回不是 JSON："+raw.slice(0,200)); }
+  if(!res.ok) throw new Error(data.error || ("接口返回 "+res.status));
+  const text = data.text || "";
+  if(!text.trim()) throw new Error("返回为空");
+  return parseLines(text);
+}
 
 function plainPhase(ph){
-  const lines = buildPhase(state.styleK, ph.id, params(), state.seed||0);
-  return `【${ph.name}】 ${ph.tc}\n` + lines.map(l=>(l.anchor?"[锚] ":"")+l.text).join("\n");
+  const s = state.store[ph.id];
+  if(!s || s.status!=="done") return "";
+  return `【${ph.name}】 ${ph.tc}\n` + s.lines.map(l=>(l.anchor?"[锚] ":"")+l.text).join("\n");
 }
 function copy(text, msg){
   navigator.clipboard.writeText(text).then(()=>toast(msg)).catch(()=>toast("复制失败，请手动选择"));
@@ -623,22 +338,23 @@ function renderStyleCards(){
       <span class="st">${esc(s.t)}</span><span class="sd">${esc(s.d)}</span>
     </button>`).join("");
   el.querySelectorAll(".stylecard").forEach(b=>{
-    b.onclick = ()=>{ state.styleK = b.dataset.style; state.seed = null; renderAll(); };
+    b.onclick = ()=>{
+      state.styleK = b.dataset.style;
+      state.store = {};
+      document.getElementById("f_styleConstraint").value = state.styleConstraints[state.styleK];
+      renderAll();
+    };
   });
 }
 function renderTrackPills(){
   const el = document.getElementById("trackPills");
   el.innerHTML = TRACKS.map(t => `<span class="pill${state.trackK===t.k?' on':''}" data-track="${t.k}">${esc(t.t)}</span>`).join("");
-  el.querySelectorAll(".pill").forEach(p=>{
-    p.onclick = ()=>{ state.trackK = p.dataset.track; renderAll(); };
-  });
+  el.querySelectorAll(".pill").forEach(p=>{ p.onclick = ()=>{ state.trackK = p.dataset.track; }; });
 }
 function renderEmoPills(){
   const el = document.getElementById("emoPills");
   el.innerHTML = EMOS.map(e => `<span class="pill${state.emotionK===e.k?' on':''}" data-emo="${e.k}">${esc(e.t)}</span>`).join("");
-  el.querySelectorAll(".pill").forEach(p=>{
-    p.onclick = ()=>{ state.emotionK = p.dataset.emo; renderAll(); };
-  });
+  el.querySelectorAll(".pill").forEach(p=>{ p.onclick = ()=>{ state.emotionK = p.dataset.emo; }; });
 }
 
 function renderOutput(){
@@ -646,77 +362,100 @@ function renderOutput(){
   const metaEl = document.getElementById("meta");
   const copyAllBtn = document.getElementById("copyAllBtn");
   const PHASES = PHASES_BY_STYLE[state.styleK];
-  const style = STYLES.find(s=>s.k===state.styleK);
+  const started = Object.keys(state.store).length>0;
 
-  if(state.seed===null){
+  if(!started){
     resultEl.innerHTML = `<div class="empty"><div class="big">⟳</div>
-      <p>先选风格，填好年级和情绪入口，点「生成循环话术」。每句措辞来自三场实战逐字稿验证过的句子，<span style="color:var(--anchor)">青色脉冲点</span>是核心信息锚点。</p></div>`;
-    metaEl.textContent = "";
-    copyAllBtn.style.display = "none";
+      <p>先选风格（可展开"风格限制"自定义写法边界），填好年级和情绪入口，点「生成循环话术」。每段实时调用 DeepSeek 生成，遵守左侧固定红线 + 风格限制。</p></div>`;
+    metaEl.textContent=""; copyAllBtn.style.display="none";
     return;
   }
-  metaEl.textContent = `${style.t} · ${style.d}`;
-  copyAllBtn.style.display = "inline-block";
+  const done = PHASES.filter(p=>(state.store[p.id]||{}).status==="done").length;
+  metaEl.textContent = done>0 ? `${done}/${PHASES.length} 段已生成` : "";
+  copyAllBtn.style.display = done===PHASES.length ? "inline-block" : "none";
 
   let html = '<div class="spine">';
   PHASES.forEach(ph=>{
-    const lines = buildPhase(state.styleK, ph.id, params(), state.seed);
-    const body = lines.map(l => l.anchor
-      ? `<div class="line anchor"><span class="atag">锚</span>${esc(l.text)}</div>`
-      : `<div class="line">${esc(l.text)}</div>`).join("");
-    html += `<div class="node">
+    const s = state.store[ph.id] || {status:"idle"};
+    let body = "";
+    if(s.status==="loading") body = '<div class="card"><div class="shimmer" style="width:88%"></div><div class="shimmer" style="width:72%"></div><div class="shimmer" style="width:80%"></div></div>';
+    else if(s.status==="error") body = `<div class="card"><span class="err">${esc(s.error||"生成失败")}</span><button class="retry" data-phase="${ph.id}">重试</button></div>`;
+    else if(s.status==="done"){
+      const lines = s.lines.map(l=> l.anchor
+        ? `<div class="line anchor"><span class="atag">锚</span>${esc(l.text)}</div>`
+        : `<div class="line">${esc(l.text)}</div>`).join("");
+      body = `<div class="card"><button class="copyone" data-phase="${ph.id}">复制本段</button>${lines}</div>`;
+    } else body = '<div class="card"><div class="line" style="color:var(--tx-dim)">待生成</div></div>';
+    html += `<div class="node ${s.status}">
       <div class="nhead"><span class="nno">${ph.no}</span><span class="nname">${esc(ph.name)}</span><span class="ntc">${esc(ph.tc)}</span></div>
-      <div class="card"><button class="copyone" data-phase="${ph.id}">复制本段</button>${body}</div>
-    </div>`;
+      ${body}</div>`;
   });
-  html += '<div class="loop">LOOP · 二轮起换案例/换情绪入口，防长停留用户疲劳</div>';
+  if(done===PHASES.length) html += '<div class="loop">LOOP · 回到 0:00 重新开场，进入下一轮</div>';
 
   html += '<div class="faq"><div class="faqhead">异议处理 KT板 <span class="n">穿插全程 · 答完→回价值→再促单，顺序不反</span></div>';
-  getFAQ(state.price || "199").forEach(f=>{
+  getFAQ(state.price||"199").forEach(f=>{
     html += `<div class="qa"><div class="q">Q：${esc(f.q)}</div><div class="a">${esc(f.a)}</div></div>`;
   });
-  html += '</div></div>';
-
+  html += '</div>';
+  html += '</div>';
   resultEl.innerHTML = html;
+
   resultEl.querySelectorAll(".copyone").forEach(b=>{
-    b.onclick = ()=>{
-      const ph = PHASES.find(p=>p.id===b.dataset.phase);
-      copy(plainPhase(ph), "本段已复制");
-    };
+    b.onclick = ()=>{ const ph = PHASES.find(p=>p.id===b.dataset.phase); copy(plainPhase(ph), "本段已复制"); };
+  });
+  resultEl.querySelectorAll(".retry").forEach(b=>{
+    b.onclick = ()=> runOne(b.dataset.phase);
   });
 }
 
 function renderAll(){
-  renderStyleCards();
-  renderTrackPills();
-  renderEmoPills();
-  renderOutput();
-  document.getElementById("rerollBtn").disabled = state.seed===null;
-  document.getElementById("goBtn").textContent = state.seed===null ? "生成循环话术" : "重新生成";
+  renderStyleCards(); renderTrackPills(); renderEmoPills(); renderOutput();
   document.getElementById("appTitle").innerHTML = `${esc(state.productName||"小布2.0")} <b>直播话术</b>生成器`;
 }
 
-// 输入框绑定（不重新渲染整页，避免打字时丢失焦点）
+async function runOne(phaseId){
+  const PHASES = PHASES_BY_STYLE[state.styleK];
+  const ph = PHASES.find(p=>p.id===phaseId);
+  state.store[phaseId] = {status:"loading"}; renderOutput();
+  try{ state.store[phaseId] = {status:"done", lines: await callGenerate(phaseId)}; }
+  catch(e){ state.store[phaseId] = {status:"error", error:e.message}; }
+  renderOutput();
+}
+
+async function runAll(){
+  if(state.running) return;
+  state.running = true;
+  const go = document.getElementById("goBtn");
+  go.disabled = true; go.innerHTML = '<span class="spin"></span>生成中…';
+  const PHASES = PHASES_BY_STYLE[state.styleK];
+  state.store = {}; PHASES.forEach(p=> state.store[p.id]={status:"idle"});
+  renderOutput();
+  for(const ph of PHASES){
+    state.store[ph.id] = {status:"loading"}; renderOutput();
+    try{ state.store[ph.id] = {status:"done", lines: await callGenerate(ph.id)}; }
+    catch(e){ state.store[ph.id] = {status:"error", error:e.message}; }
+    renderOutput();
+  }
+  go.disabled = false; go.textContent = "重新生成";
+  state.running = false;
+}
+
 [["f_productName","productName"],["f_price","price"],["f_spec","spec"],
  ["f_bundle","bundle"],["f_brand","brand"],["f_coreSkill","coreSkill"],
  ["f_stock","stock"],["f_benefit","benefit"]].forEach(([id,key])=>{
   document.getElementById(id).addEventListener("input", e=>{ state[key] = e.target.value; });
 });
+document.getElementById("f_styleConstraint").addEventListener("input", e=>{
+  state.styleConstraints[state.styleK] = e.target.value;
+});
 
-document.getElementById("goBtn").onclick = ()=>{
-  state.seed = Math.floor(Math.random()*100000);
-  renderAll();
-};
-document.getElementById("rerollBtn").onclick = ()=>{
-  if(state.seed===null) return;
-  state.seed = state.seed + 1;
-  renderOutput();
-};
+document.getElementById("goBtn").onclick = runAll;
 document.getElementById("copyAllBtn").onclick = ()=>{
   const PHASES = PHASES_BY_STYLE[state.styleK];
-  copy(PHASES.map(plainPhase).join("\n\n"), "整套话术已复制");
+  copy(PHASES.map(plainPhase).filter(Boolean).join("\n\n"), "整套话术已复制");
 };
 
+document.getElementById("f_styleConstraint").value = state.styleConstraints[state.styleK];
 renderAll();
 </script>
 </body>
