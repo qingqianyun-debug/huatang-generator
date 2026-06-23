@@ -30,6 +30,10 @@ const EMOS = {
 // 防止同一条事实在多段里被重复使用。
 const FACT_PHASE = { doc3:"p2", chenkai:null, zhang:"z1", wangyu:null, fusion:"f1" };
 
+// 上课方式（真实信息）：只在每种风格指定的"价值讲解"段提到一次，其他段落不提，避免重复。
+const TEACHING_FORMAT = "在核桃编程APP里学，是实操型课程，'一学九练'体系——学一个知识点配九次练习巩固；全程有老师带练，孩子随时可以连麦在线答疑，不是录完视频就不管了；课前有复习环节、课后有练习作业；另外有1对1辅导老师，孩子学不懂的地方有人专门管。";
+const TEACHING_PHASE = { doc3:"p6", chenkai:"c2", zhang:"z2", wangyu:"w2", fusion:"f2" };
+
 // ---------------- 固定合规红线（不可被前端覆盖） ----------------
 const REDLINES = `
 【硬性红线 — 绝不触碰，优先级高于下面任何风格限制】
@@ -159,6 +163,8 @@ function buildUserPrompt(phase, params, priorText, styleK){
   const coreSkill = (params.coreSkill||"").trim() || "编程思维";
   const deadlineText = buildDeadlineText(params.deadlineK, price, origPrice);
   const includeFact = FACT_PHASE[styleK] === phase.id;
+  const includeTeaching = TEACHING_PHASE[styleK] === phase.id;
+  const teachingLine = includeTeaching ? `\n- 上课方式（仅这一段需要提到，提一两句即可，不要逐字罗列堆砌）：${TEACHING_FORMAT}` : "";
   const prior = (priorText||"").trim();
   const priorBlock = prior
     ? `\n【前面段落已经讲过的内容，不要重复这些具体表述——同一个事实/卖点只详细讲一次，这一段要讲新的角度或推进到下一步，不要把前面说过的话换种方式再说一遍】\n${prior.slice(-1200)}\n`
@@ -175,7 +181,7 @@ function buildUserPrompt(phase, params, priorText, styleK){
 - ${buildTrackContext(params.trackK)}
 - ${buildEmoContext(params.emotionK, includeFact)}
 - 今日促单机制：${deadlineText || "未选择——本场不要出现任何限量、倒计时或催单施压"}
-- 今日福利机制：${benefit || "未提供——不要编造具体赠品"}
+- 今日福利机制：${benefit || "未提供——不要编造具体赠品"}${teachingLine}
 ${priorBlock}
 现在只写【${phase.name}】这一阶段（${phase.tc}）的话术，约6~9句。
 该阶段任务：${phase.brief}`;
