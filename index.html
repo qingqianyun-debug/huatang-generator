@@ -310,12 +310,12 @@ function params(){
   };
 }
 
-async function callGenerate(phaseId){
+async function callGenerate(phaseId, priorText){
   let res;
   try{
     res = await fetch("/api/generate", {
       method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ styleK:state.styleK, phaseId, params:params(), styleConstraint:state.styleConstraints[state.styleK] })
+      body: JSON.stringify({ styleK:state.styleK, phaseId, params:params(), styleConstraint:state.styleConstraints[state.styleK], priorText })
     });
   }catch(e){ throw new Error("网络请求失败："+(e.message||"")); }
   const raw = await res.text();
@@ -427,11 +427,20 @@ function renderAll(){
   document.getElementById("appTitle").innerHTML = `${esc(state.productName||"小布2.0")} <b>直播话术</b>生成器`;
 }
 
+function buildPriorText(){
+  const PHASES = PHASES_BY_STYLE[state.styleK];
+  return PHASES.map(ph=>{
+    const s = state.store[ph.id];
+    if(!s || s.status!=="done") return "";
+    return s.lines.map(l=>l.text).join(" ");
+  }).filter(Boolean).join("\n");
+}
+
 async function runOne(phaseId){
   const PHASES = PHASES_BY_STYLE[state.styleK];
   const ph = PHASES.find(p=>p.id===phaseId);
   state.store[phaseId] = {status:"loading"}; renderOutput();
-  try{ state.store[phaseId] = {status:"done", lines: await callGenerate(phaseId)}; }
+  try{ state.store[phaseId] = {status:"done", lines: await callGenerate(phaseId, buildPriorText())}; }
   catch(e){ state.store[phaseId] = {status:"error", error:e.message}; }
   renderOutput();
 }
@@ -446,7 +455,7 @@ async function runAll(){
   renderOutput();
   for(const ph of PHASES){
     state.store[ph.id] = {status:"loading"}; renderOutput();
-    try{ state.store[ph.id] = {status:"done", lines: await callGenerate(ph.id)}; }
+    try{ state.store[ph.id] = {status:"done", lines: await callGenerate(ph.id, buildPriorText())}; }
     catch(e){ state.store[ph.id] = {status:"error", error:e.message}; }
     renderOutput();
   }
