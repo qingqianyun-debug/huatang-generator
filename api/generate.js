@@ -281,8 +281,8 @@ function stripMetaCommentary(text){
 
 export default async function handler(req, res){
   if(req.method !== "POST"){ res.status(405).json({error:"只支持 POST"}); return; }
-  const key = process.env.DEEPSEEK_API_KEY;
-  if(!key){ res.status(500).json({error:"服务器还没配置 DEEPSEEK_API_KEY，请到 Vercel 环境变量里添加。"}); return; }
+  const key = process.env.ANTHROPIC_API_KEY;
+  if(!key){ res.status(500).json({error:"服务器还没配置 ANTHROPIC_API_KEY，请到 Vercel 环境变量里添加。"}); return; }
 
   try{
     const { styleK, phaseId, params, styleConstraint, priorText } = req.body || {};
@@ -291,22 +291,26 @@ export default async function handler(req, res){
     const phase = phases.find(p=>p.id===phaseId);
     if(!phase){ res.status(400).json({error:"未知阶段："+phaseId+" | 收到的req.body："+JSON.stringify(req.body)}); return; }
 
-    const r = await fetch("https://api.deepseek.com/chat/completions", {
+    const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: { "Content-Type":"application/json", "Authorization":"Bearer "+key },
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01"
+      },
       body: JSON.stringify({
-        model: "deepseek-chat",
-        max_tokens: 1000,
+        model: "claude-sonnet-4-6",
+        max_tokens: 1500,
         temperature: 0.85,
+        system: buildSystemPrompt(styleK, styleConstraint),
         messages: [
-          { role:"system", content: buildSystemPrompt(styleK, styleConstraint) },
           { role:"user", content: buildUserPrompt(phase, params||{}, priorText, styleK) }
         ]
       })
     });
     const data = await r.json();
-    if(!r.ok){ res.status(502).json({error:"DeepSeek 接口返回错误", detail:data}); return; }
-    const rawText = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "";
+    if(!r.ok){ res.status(502).json({error:"Claude 接口返回错误", detail:data}); return; }
+    const rawText = (data.content || []).map(b => b.type === "text" ? b.text : "").join("\n");
     const cleaned = stripMetaCommentary(rawText);
     const text = dedupText(cleaned, priorText);
     res.status(200).json({ text });
