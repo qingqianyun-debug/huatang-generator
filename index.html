@@ -117,7 +117,7 @@
     <span class="livedot"></span>
     <div>
       <div class="title" id="appTitle">小布2.0 <b>直播话术</b>生成器</div>
-      <div class="sub">5种风格 · 实时联网生成（DeepSeek） · 风格限制可编辑</div>
+      <div class="sub">5种风格 · 实时联网生成（Claude） · 风格限制可编辑</div>
     </div>
     <span class="tag">AI 实时生成</span>
   </div>
@@ -180,7 +180,7 @@
       <div id="result">
         <div class="empty">
           <div class="big">⟳</div>
-          <p>先选风格（可展开"风格限制"自定义写法边界），填好年级和情绪入口，点「生成循环话术」。每段实时调用 DeepSeek 生成，遵守左侧固定红线 + 风格限制。</p>
+          <p>先选风格（可展开"风格限制"自定义写法边界），填好年级和情绪入口，点「生成循环话术」。每段实时调用 Claude 生成，遵守左侧固定红线 + 风格限制。</p>
         </div>
       </div>
     </main>
@@ -376,7 +376,7 @@ function renderOutput(){
 
   if(!started){
     resultEl.innerHTML = `<div class="empty"><div class="big">⟳</div>
-      <p>先选风格（可展开"风格限制"自定义写法边界），填好年级和情绪入口，点「生成循环话术」。每段实时调用 DeepSeek 生成，遵守左侧固定红线 + 风格限制。</p></div>`;
+      <p>先选风格（可展开"风格限制"自定义写法边界），填好年级和情绪入口，点「生成循环话术」。每段实时调用 Claude 生成，遵守左侧固定红线 + 风格限制。</p></div>`;
     metaEl.textContent=""; copyAllBtn.style.display="none";
     return;
   }
