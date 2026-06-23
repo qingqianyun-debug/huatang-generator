@@ -28,7 +28,7 @@
   @media(max-width:860px){.panel{position:static}}
   .fld{margin-bottom:18px}.fld:last-child{margin-bottom:0}
   .lbl{display:block;font-size:12px;font-weight:700;color:var(--tx);margin-bottom:9px}
-  .lbl .hint{font-weight:400;color:var(--tx-dim);font-size:11px;margin-left:6px;font-family:var(--font-mono)}
+  .lbl .hint, .pfld label .hint{font-weight:400;color:var(--tx-dim);font-size:11px;margin-left:6px;font-family:var(--font-mono)}
   .pills{display:flex;flex-wrap:wrap;gap:7px}
   .pill{font-size:12.5px;padding:7px 12px;border-radius:8px;border:1px solid var(--hair);background:var(--raised);color:var(--tx-mut);cursor:pointer;transition:.14s;user-select:none}
   .pill:hover{border-color:#3d4351;color:var(--tx)}
@@ -128,6 +128,7 @@
         <summary></summary>
         <div class="pfld"><label>产品名称</label><input class="ipt" id="f_productName" placeholder="小布2.0"></div>
         <div class="pfld"><label>价格</label><input class="ipt" id="f_price" placeholder="199"></div>
+        <div class="pfld"><label>原价 <span class="hint">配合"今日价格今晚涨"用</span></label><input class="ipt" id="f_origPrice" placeholder="299"></div>
         <div class="pfld"><label>规格亮点</label><input class="ipt" id="f_spec" placeholder="30天24节正课，每节60到90分钟，中间有休息"></div>
         <div class="pfld"><label>随课赠品/配件</label><input class="ipt" id="f_bundle" placeholder="机器人、配套书"></div>
         <div class="pfld"><label>品牌背书一句话</label><input class="ipt" id="f_brand" placeholder="核桃编程做编程起家十几年，官方直播间，营业执照带红章"></div>
@@ -151,8 +152,8 @@
         <div class="pills" id="emoPills"></div>
       </div>
       <div class="fld">
-        <label class="lbl">真实库存/活动状态 <span class="hint">挂真锚点</span></label>
-        <textarea id="f_stock" placeholder="例：现货就这一批，今天下午就出物流。留空则不喊库存。"></textarea>
+        <label class="lbl">今日促单机制 <span class="hint">选一个，不选则不催单</span></label>
+        <div class="pills" id="deadlinePills"></div>
       </div>
       <div class="fld">
         <label class="lbl">今日福利机制 <span class="hint">阶梯福利</span></label>
@@ -198,10 +199,18 @@ const TRACKS = [
   {k:"mix", t:"混合年级"}
 ];
 const EMOS = [
-  {k:"era", t:"升学焦虑(升维版)"},
-  {k:"literacy", t:"素养vs应试"},
+  {k:"era", t:"AI不掉队"},
+  {k:"literacy", t:"数理思维底层逻辑"},
   {k:"talent", t:"科技特长生"},
-  {k:"hands", t:"动手成就感"}
+  {k:"hands", t:"动手·科创作品"}
+];
+const DEADLINES = [
+  {k:"none", t:"不催单"},
+  {k:"seal", t:"封板日开班"},
+  {k:"one", t:"年级限量一单"},
+  {k:"gift3", t:"赠品限量三套"},
+  {k:"price", t:"今日价格今晚涨"},
+  {k:"coupon", t:"优惠券限时30分"}
 ];
 const STYLES = [
   {k:"doc3", t:"事实焦虑风格", d:"十段式·事实紧迫感"},
@@ -226,7 +235,7 @@ const PHASES_BY_STYLE = {
   chenkai: [
     {id:"c1",no:"01",name:"开场·稀缺+福利钩",tc:"0:00–1:00"},
     {id:"c2",no:"02",name:"价值讲解·规格体系",tc:"1:00–3:30"},
-    {id:"c5",no:"03",name:"信任道具·执照与现货",tc:"3:30–4:30"},
+    {id:"c5",no:"03",name:"信任道具·执照与一价全含",tc:"3:30–4:30"},
     {id:"c4",no:"04",name:"闭单促拍·问年级促单",tc:"4:30–6:00"},
     {id:"c6",no:"05",name:"成交接球·备注关注",tc:"6:00–6:30"}
   ],
@@ -254,11 +263,11 @@ const PHASES_BY_STYLE = {
   ]
 };
 const DEFAULT_STYLE_CONSTRAINTS = {
-  doc3: "语气：用客观事实和趋势制造紧迫感，不是情绪轰炸式焦虑；语气克制、冷静、像在摆事实讲道理，不要哭喊式渲染、不要堆砌感叹号式煽情。\n结构顺序：严格按十段递进——焦虑开场→事实紧迫感→痛点共鸣→主播自爆（必须是态度转折的桥梁，先怀疑后认可，不能脱离上下文单独出现）→场景铺垫→价值峰值→课程价值→价格锚点→不买代价→终值收尾。价格和信任信息必须在'不买的代价'那段之前就讲完，不能拖到最后才补。每段控制在5~8句。\n内容边界：制造紧迫感只能用两种来源——泛化的趋势性表述（比如'身边已经有家庭在动手了'），或者真实库存/福利里填的真实信息；绝对不能编造具体统计数字、政策条文、机构名称；硬件不能做成才艺表演，只能以'代码执行结果'出现。",
-  chenkai: "强转化、语速感强、直给不绕弯；先把价值和信任讲完才能进促单段；促单必须搭配'不让盲目拍'式刹车句，不能只逼单不给退路；不堆砌十问十答式罗列，异议照应简短带过即可。",
-  zhang: "整体语气柔和、像在跟朋友聊天，少用强push命令句；促单前必须先把信任和一价全含说清楚；可以用服务降级稀缺制造紧迫感，但不夸大、不威胁式催促。",
-  wangyu: "教学式、耐心讲解，促单语气要软，允许直接说'不合适不用拍'；必须包含按年级分层讲解的逻辑；信任段要包含明确的预期管理（说清楚这套能做到什么、不能做到什么）。",
-  fusion: "综合三种风格优点：开场留人快、价值讲解扎实、信任段诚实、促单段配刹车句、结尾干净；每段比单一风格略短，节奏紧凑；同一卖点不重复超过2次。"
+  doc3: "语气：用客观事实和趋势制造紧迫感，不是情绪轰炸式焦虑；语气克制、冷静、像在摆事实讲道理，不要哭喊式渲染、不要堆砌感叹号式煽情。\n结构顺序：严格按十段递进——焦虑开场→事实紧迫感→痛点共鸣→主播自爆（必须是态度转折的桥梁，先怀疑后认可，不能脱离上下文单独出现）→场景铺垫→价值峰值→课程价值→价格锚点→不买代价→终值收尾。价格和信任信息必须在'不买的代价'那段之前就讲完，不能拖到最后才补。每段控制在5~8句。\n内容边界：制造紧迫感只能用两种来源——泛化的趋势性表述（比如'身边已经有家庭在动手了'），或者今日促单机制/福利里填的真实信息；绝对不能编造具体统计数字、政策条文、机构名称；硬件不能做成才艺表演，只能以'代码执行结果'出现。",
+  chenkai: "语气：强转化、语速感强、直给不绕弯，像销售在帮你做决定，但不能变成单纯施压。\n结构顺序：开场·稀缺+福利钩→价值讲解·规格体系→信任道具→闭单促拍→成交接球。价值和信任必须在促单段之前讲完（顺序错了会导致退款率升高）；促单段必须带'不让盲目拍'刹车句，不能只逼单不给退路。\n内容边界：不堆砌十问十答式罗列做主线内容，异议简短带过即可；规格体系要具体（课时/时长/形式）；不编造库存数量。",
+  zhang: "语气：柔和、像在跟朋友聊天分享，少用强push命令句，情绪共鸣优先于硬卖。\n结构顺序：开场留人·情绪钩→价值讲解·四级进阶句→轻应答·刹车基调→信任·一价全含→促单·刹车句+服务降级。一价全含的信任段必须在促单段之前讲完。\n内容边界：不展示机器人功能罗列式硬件演示；服务降级稀缺感可以用，但不能夸大或威胁式催促；不用贬损式对比抬高自己。",
+  wangyu: "语气：教学式、耐心讲解，像老师在跟家长解释课程，不强推、不施压；促单语气要软，允许直接说'不合适不用拍'。\n结构顺序：年级征集·路由开场→分层价值·按周里程碑→期望管理→信任·购买逻辑句→促单·真锚点→关注收尾。分层内容必须按周给出明确里程碑，不能笼统讲。\n内容边界：不用强逼单话术；期望管理必须诚实说明这套是入门，长线规划不含在内。",
+  fusion: "语气：综合三种风格优点，节奏紧凑，不偏向任何一人的极端，整体稳健专业又不失温度。\n结构顺序：开场留人+年级征集→分层价值讲解→信任段→促单截单段·三工艺→成交接球。每段比单一风格略短；信任段必须在促单段之前。\n内容边界：同一卖点不重复超过2次；异议应答交给FAQ，主线不堆砌罗列式异议。"
 };
 
 function getFAQ(price){
@@ -284,9 +293,9 @@ function parseLines(text){
 function esc(s){ return s.replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
 
 const state = {
-  styleK:"doc3", trackK:"low", emotionK:"era",
-  stock:"", benefit:"",
-  productName:"", price:"", spec:"", bundle:"", brand:"", coreSkill:"",
+  styleK:"doc3", trackK:"low", emotionK:"era", deadlineK:"none",
+  benefit:"",
+  productName:"", price:"", origPrice:"", spec:"", bundle:"", brand:"", coreSkill:"",
   styleConstraints:{},
   store:{},
   running:false
@@ -295,8 +304,8 @@ STYLES.forEach(s=> state.styleConstraints[s.k] = DEFAULT_STYLE_CONSTRAINTS[s.k])
 
 function params(){
   return {
-    trackK:state.trackK, emotionK:state.emotionK, stock:state.stock, benefit:state.benefit,
-    productName:state.productName, price:state.price, spec:state.spec,
+    trackK:state.trackK, emotionK:state.emotionK, deadlineK:state.deadlineK, benefit:state.benefit,
+    productName:state.productName, price:state.price, origPrice:state.origPrice, spec:state.spec,
     bundle:state.bundle, brand:state.brand, coreSkill:state.coreSkill
   };
 }
@@ -356,6 +365,11 @@ function renderEmoPills(){
   el.innerHTML = EMOS.map(e => `<span class="pill${state.emotionK===e.k?' on':''}" data-emo="${e.k}">${esc(e.t)}</span>`).join("");
   el.querySelectorAll(".pill").forEach(p=>{ p.onclick = ()=>{ state.emotionK = p.dataset.emo; }; });
 }
+function renderDeadlinePills(){
+  const el = document.getElementById("deadlinePills");
+  el.innerHTML = DEADLINES.map(d => `<span class="pill${state.deadlineK===d.k?' on':''}" data-deadline="${d.k}">${esc(d.t)}</span>`).join("");
+  el.querySelectorAll(".pill").forEach(p=>{ p.onclick = ()=>{ state.deadlineK = p.dataset.deadline; renderDeadlinePills(); }; });
+}
 
 function renderOutput(){
   const resultEl = document.getElementById("result");
@@ -409,7 +423,7 @@ function renderOutput(){
 }
 
 function renderAll(){
-  renderStyleCards(); renderTrackPills(); renderEmoPills(); renderOutput();
+  renderStyleCards(); renderTrackPills(); renderEmoPills(); renderDeadlinePills(); renderOutput();
   document.getElementById("appTitle").innerHTML = `${esc(state.productName||"小布2.0")} <b>直播话术</b>生成器`;
 }
 
@@ -440,9 +454,9 @@ async function runAll(){
   state.running = false;
 }
 
-[["f_productName","productName"],["f_price","price"],["f_spec","spec"],
+[["f_productName","productName"],["f_price","price"],["f_origPrice","origPrice"],["f_spec","spec"],
  ["f_bundle","bundle"],["f_brand","brand"],["f_coreSkill","coreSkill"],
- ["f_stock","stock"],["f_benefit","benefit"]].forEach(([id,key])=>{
+ ["f_benefit","benefit"]].forEach(([id,key])=>{
   document.getElementById(id).addEventListener("input", e=>{ state[key] = e.target.value; });
 });
 document.getElementById("f_styleConstraint").addEventListener("input", e=>{
